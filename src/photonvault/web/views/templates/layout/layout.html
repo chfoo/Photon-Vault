@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>
+{% block layout_title %}
+{% end %}
+</title>
+<link rel="stylesheet" href="/resource/styles.css"/>
+{% block layout_head %}
+{% end %}
+<script type="text/javascript" src="/resource/scripts.js"></script>
+</head>
+<body>
+
+<header id="site-header">
+	
+</header>
+
+{% module Template('layout/message.html') %}
+
+<div id="site-content">
+{% block layout_content %}
+No content defined
+{% end %}
+</div>
+
+<footer id="site-footer">
+Powered by <a href="">Photon Vault</a>
+</footer>
+
+</body>
+</html>

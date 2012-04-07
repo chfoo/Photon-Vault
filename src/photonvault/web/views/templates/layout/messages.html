@@ -1,0 +1,12 @@
+{% if hasattr(request, 'messages') %}
+	{% for title, body in request.messages %}
+		<section id="site-message">
+			<strong id="site-message-title">{{ title }}</strong>
+			{% if body %}
+				<p id="site-message-body">{{ body }}</p>
+			{% end %}
+		</section>
+	{% end %}
+	
+	{% set request.messages = None %}
+{% end %}
