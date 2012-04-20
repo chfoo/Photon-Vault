@@ -1,0 +1,21 @@
+{% extends '../layout/layout.html' %}
+
+{% block layout_title %}
+{{ _('Upload') }}
+{% end %}
+
+{% block layout_content %}
+
+<form method="post" enctype="multipart/form-data">
+	{% raw xsrf_form_html() %}
+	
+	<p>{{ _('Upload a single file or an archive of files. zip, tar+gzip and tar+bzip files are supported.') }}</p>
+	
+	<label>{{ _('File: ') }}
+		<input type="file" name="file"/>
+	</label>
+
+	<input type="submit" value="{{ _('Save') }}" />
+</form>
+
+{% end %}

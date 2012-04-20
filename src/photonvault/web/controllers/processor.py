@@ -1,6 +1,6 @@
 #encoding=utf8
-'''Application instance'''
-
+'''Photo and video processing'''
+#
 # This file is part of Photon Vault.
 # 
 # Photon Vault is free software: you can redistribute it and/or modify
@@ -16,33 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 
+__docformat__ = 'restructuredtext en'
 
 from photonvault.web.controllers.database import Database
-from photonvault.web.controllers.processor import Processor
-from photonvault.web.controllers.resource import Resource
-from photonvault.web.controllers.viewer import Viewer
-import ConfigParser
-import os.path
-import photonvault.web
-import tornado.web
+from tornado.web import Controller, RequestHandler, URLSpec, FileUploadHandler
+import shutil
 
-class Application(tornado.web.Application):
-	def __init__(self, config_filename):
-		self.config_parser = ConfigParser.SafeConfigParser()
-		self.config_parser.read([config_filename])
+
+class Processor(Controller):
+	def get_handlers(self):
+		return [
+			URLSpec('/upload', UploadHandler),
+		]
+
+
+class QueueViewHandler(RequestHandler):
+	def get(self):
+		pass
+
+class UploadHandler(FileUploadHandler):
+	def get(self):
+		self.render('processor/upload.html')
+	
+	def post(self):
+		self.start_reading()
+	
+	def upload_finished(self):
+		dest_f = self.controllers[Database].fs.new_file(
+			filename=self.field_storage['file'].filename)
 		
-		tornado.web.Application.__init__(self, 
-			controllers=[
-				Database,
-				Resource,
-				Viewer,
-				Processor,
-			],
-			template_path=self._get_template_path(),
-		)
-	
-	def _get_template_path(self):
-		return os.path.join(os.path.dirname(photonvault.web.views.__file__),
-			'templates')
-	
-	
+		shutil.copyfileobj(self.field_storage['file'].file, dest_f)
+		
+		self.finish()

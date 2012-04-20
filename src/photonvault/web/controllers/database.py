@@ -16,12 +16,38 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 
+__docformat__ = 'restructuredtext en'
 
+import pymongo.connection
 import tornado.web
+import gridfs
 
 class Database(tornado.web.Controller):
 	def get_handlers(self):
 		return []
 	
 	def init(self):
-		pass
+		host = u'localhost'
+		port = 27017
+		
+		if self.application.config_parser.has_option(u'database', u'host'):
+			host = self.application.config_parser.get(u'database', u'host')
+			
+		if self.application.config_parser.has_option(u'database', u'port'):
+			port = self.application.config_parser.getint(u'database', u'port')
+		
+		self.connection = pymongo.connection.Connection(host, port)
+	
+	@property
+	def db(self):
+		name = u'photonvault'
+		
+		if self.application.config_parser.has_option(u'database', u'name'):
+			name = self.application.config_parser.get(u'database', u'name')
+		
+		return self.connection[name]
+	
+	@property
+	def fs(self):
+		return gridfs.GridFS(self.db)
+	

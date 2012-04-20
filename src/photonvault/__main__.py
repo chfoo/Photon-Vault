@@ -16,7 +16,7 @@
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from .web.app import Application
+from photonvault.web.app import Application
 import argparse
 import tornado.ioloop
 from ConfigParser import ConfigParser
@@ -31,7 +31,7 @@ def main():
 	
 	args = arg_parser.parse_args()
 	
-	application = Application(args.config_filename)
+	application = Application(args.config_filename[0])
 	
 	config_parser = ConfigParser()
 	config_parser.read(args.config_filename)
