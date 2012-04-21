@@ -19,6 +19,8 @@
 __docformat__ = 'restructuredtext en'
 
 from photonvault.web.controllers.database import Database
+from photonvault.web.models.collection import UploadQueue
+from photonvault.web.utils.render import render_response
 from tornado.web import Controller, RequestHandler, URLSpec, FileUploadHandler
 import shutil
 
@@ -41,10 +43,26 @@ class UploadHandler(FileUploadHandler):
 	def post(self):
 		self.start_reading()
 	
+	@render_response
 	def upload_finished(self):
 		dest_f = self.controllers[Database].fs.new_file(
 			filename=self.field_storage['file'].filename)
 		
 		shutil.copyfileobj(self.field_storage['file'].file, dest_f)
+		dest_f.close()
 		
-		self.finish()
+		file_id = dest_f._id
+		
+		upload_queue = self.controllers[Database].db[UploadQueue.COLLECTION]
+		upload_queue.insert({
+			UploadQueue.FILE_ID: file_id
+		})
+		
+		bytes_read = self.field_storage['file'].file.tell()
+		
+		return {
+			'_template': 'processor/upload.html',
+			'bytes_read': bytes_read,
+			'file_id': str(file_id),
+			'_redirect': '/queue',
+		}

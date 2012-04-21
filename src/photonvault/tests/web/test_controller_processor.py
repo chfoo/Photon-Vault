@@ -18,6 +18,7 @@
 #
 from photonvault.tests.web.test_server import ServerBase
 import httplib
+import json
 import os.path
 import unittest
 import urllib3.filepost
@@ -27,19 +28,38 @@ class TestProcessor(ServerBase):
 	def data_dir(self):
 		return os.path.join(os.path.dirname(__file__), 'data')
 	
-	def test_upload(self):
+	def test_upload_image(self):
 		'''It should accept a single image''' 
 		
-		file_data = open(os.path.join(self.data_dir, 'image.png'), 'rb').read()
+		self._upload('image.png')
+	
+	def test_upload_tgz(self):
+		'''It should accept a tar.gz file''' 
+		
+		self._upload('image.png.tar.gz')
+		
+	def test_upload_zip(self):
+		'''It should accept a zip file''' 
+		
+		self._upload('image.png.zip')
+	
+	def _upload(self, filename):
+		file_data = open(os.path.join(self.data_dir, filename), 'rb').read()
 		
 		post_data, content_type = urllib3.filepost.encode_multipart_formdata([
 			('file', file_data)])
-		response = self.fetch('/upload', 
+		response = self.fetch('/upload?_format=json', 
 			method='POST',
 			headers={'Content-Type': content_type},
 			body=post_data,
 		)
+		
 		self.assertEqual(response.code, httplib.OK)
+		
+		json_response = json.loads(response.body)
+		
+		self.assertNotEqual(json_response['bytes_read'], 0)
+		self.assertEqual(json_response['bytes_read'], len(file_data))
 	
 
 if __name__ == "__main__":

@@ -19,10 +19,27 @@
 __docformat__ = 'restructuredtext en'
 
 import functools
+import json
 
-def render_html_or_json(request_handler, response, template_key='_template'):
+def render_html_or_json(request_handler, response, template_key='_template',
+redirect_key='_redirect'):
 	if request_handler.get_argument('_format', None) == 'json':
-		request_handler.render(response)
+		request_handler.set_header('Content-Type', 'application/json; encoding=utf-8')
+		request_handler.write(json.dumps(response))
+		request_handler.finish()
+		
+	elif '%s_url' % redirect_key in response:
+		redirect_info = response['%s_url' % redirect_key]
+		
+		if isinstance(redirect_info, dict):
+			request_handler.redirect(
+				redirect_info['url'],
+				redirect_info.get('permanent', False),
+				redirect_info.get('status', None)
+			)
+		else:
+			request_handler.redirect(redirect_info)
+		
 	else:
 		request_handler.render(response[template_key], **response)
 
