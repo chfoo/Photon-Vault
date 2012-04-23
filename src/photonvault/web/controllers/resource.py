@@ -68,7 +68,12 @@ class Resource(Controller):
 			destination_file.write('\n')
 		
 		destination_file.flush()
-
+	
+	def __del__(self):
+		del self.scripts_file
+		del self.styles_file
+		
+		Controller.__del__(self)
 
 class ScriptsHandler(StaticFileHandler):
 	def initialize(self):
