@@ -1,6 +1,6 @@
 #encoding=utf8
 '''MongoDB database controller'''
-
+#
 # This file is part of Photon Vault.
 # 
 # Photon Vault is free software: you can redistribute it and/or modify
@@ -15,15 +15,22 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
+#
+from tornado.web import RequestHandler, URLSpec
+import gridfs
+import pymongo.connection
+import tornado.web
 
 __docformat__ = 'restructuredtext en'
 
-import pymongo.connection
-import tornado.web
-import gridfs
-
 class Database(tornado.web.Controller):
 	def get_handlers(self):
+		
+		if self.application.config_parser.has_option(u'database', 
+		u'debug-allow-drop-all') and self.application.config_parser.getboolean(
+		u'database', u'debug-allow-drop-all'):
+			return [URLSpec('/database/drop', DropHandler)]
+		
 		return []
 	
 	def init(self):
@@ -50,4 +57,14 @@ class Database(tornado.web.Controller):
 	@property
 	def fs(self):
 		return gridfs.GridFS(self.db)
-	
+
+
+class DropHandler(RequestHandler):
+	def get(self):
+		db = self.controllers[Database].db
+		
+		for name in db.collection_names():
+			if not name.startswith(u'system'):
+				db.drop_collection(name)
+			
+		self.finish()

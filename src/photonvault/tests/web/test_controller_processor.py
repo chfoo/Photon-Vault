@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
-from photonvault.tests.web.test_server import ServerBase
+from photonvault.tests.web.test_server import ServerBase, post_drop_database
 import httplib
 import json
 import os.path
@@ -28,16 +28,19 @@ class TestProcessor(ServerBase):
 	def data_dir(self):
 		return os.path.join(os.path.dirname(__file__), 'data')
 	
+	@post_drop_database
 	def test_upload_image(self):
 		'''It should accept a single image''' 
 		
 		self._upload('image.png')
 	
+	@post_drop_database
 	def test_upload_tgz(self):
 		'''It should accept a tar.gz file''' 
 		
 		self._upload('image.png.tar.gz')
 		
+	@post_drop_database
 	def test_upload_zip(self):
 		'''It should accept a zip file''' 
 		

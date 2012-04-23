@@ -18,6 +18,7 @@
 #
 from photonvault.web.app import Application
 from tornado.testing import AsyncHTTPTestCase
+import functools
 import httplib
 import os.path
 import unittest
@@ -26,10 +27,18 @@ import unittest
 class ServerBase(AsyncHTTPTestCase):
 	def get_app(self):
 		config_path = os.path.join(os.path.dirname(__file__),
-			'test_config.conf')
+			'test_debug_config.conf')
 		
 		return Application(config_path)
 
+
+class ProductionServerBase(AsyncHTTPTestCase):
+	def get_app(self):
+		config_path = os.path.join(os.path.dirname(__file__),
+			'test_config.conf')
+		
+		return Application(config_path)
+	
 
 class TestServer(ServerBase):
 	def test_basic(self):
@@ -48,6 +57,16 @@ class TestServer(ServerBase):
 		response = self.fetch('/resource/styles.css')
 		self.assertEqual(response.code, httplib.OK)
 		self.assertEqual(response.headers['Content-Type'], 'text/css')
+
+
+def post_drop_database(f):
+	@functools.wraps(f)
+	def wrapper(self):
+		f(self)
+		response = self.fetch('/database/drop')
+		self.assertEqual(response.code, httplib.OK)
+	
+	return wrapper
 
 if __name__ == "__main__":
 	#import sys;sys.argv = ['', 'Test.testName']
