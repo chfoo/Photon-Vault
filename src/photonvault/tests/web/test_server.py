@@ -59,12 +59,18 @@ class TestServer(ServerBase):
 		self.assertEqual(response.headers['Content-Type'], 'text/css')
 
 
-def post_drop_database(f):
+def drop_database(f, pre=True, post=True):
 	@functools.wraps(f)
 	def wrapper(self):
+		if pre:
+			response = self.fetch('/database/drop')
+			self.assertEqual(response.code, httplib.OK)
+		
 		f(self)
-		response = self.fetch('/database/drop')
-		self.assertEqual(response.code, httplib.OK)
+		
+		if post:
+			response = self.fetch('/database/drop')
+			self.assertEqual(response.code, httplib.OK)
 	
 	return wrapper
 

@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
-from photonvault.tests.web.test_server import ServerBase, post_drop_database, \
+from photonvault.tests.web.test_server import ServerBase, drop_database, \
 	ProductionServerBase
 import httplib
 import unittest
 
 class TestDatabase(ServerBase):
-	@post_drop_database
-	def test_upload_image(self):
+	@drop_database
+	def test_database_delete(self):
 		'''It should delete the database'''
 		pass
 

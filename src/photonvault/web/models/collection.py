@@ -23,6 +23,7 @@ class Item(object):
 	DESCRIPTION = 'description'
 	TAGS = 'tags'
 	DATE = 'date'
+	FILE_ID = 'file_id'
 
 class UploadQueue(object):
 	COLLECTION = 'upload_queue'
