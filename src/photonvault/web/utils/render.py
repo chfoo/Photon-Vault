@@ -21,11 +21,34 @@ __docformat__ = 'restructuredtext en'
 import functools
 import json
 
+def serialize(obj):
+	if isinstance(obj, dict):
+		d = {}
+		
+		for key in obj:
+			d[key] = serialize(obj[key])
+		
+		return d
+	
+	if isinstance(obj, (list, tuple)):
+		l = []
+		
+		for item in obj:
+			l.append(serialize(item))
+			
+			return l
+	
+	if isinstance(obj, (int, float, str, unicode)):
+		return obj
+	
+	return unicode(obj)
+
+
 def render_html_or_json(request_handler, response, template_key='_template',
 redirect_key='_redirect'):
 	if request_handler.get_argument('_format', None) == 'json':
 		request_handler.set_header('Content-Type', 'application/json; encoding=utf-8')
-		request_handler.write(json.dumps(response))
+		request_handler.write(json.dumps(serialize(response)))
 		request_handler.finish()
 		
 	elif '%s_url' % redirect_key in response:

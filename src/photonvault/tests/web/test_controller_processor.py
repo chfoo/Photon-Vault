@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
-from photonvault.tests.web.test_server import ServerBase, drop_database
+from photonvault.tests.web.test_server import ServerBase, DatabaseCleanUpMixIn
 import httplib
 import json
 import os.path
@@ -24,28 +24,11 @@ import time
 import unittest
 import urllib3.filepost
 
-class TestProcessor(ServerBase):
+
+class UploadMixIn(object):
 	@property
 	def data_dir(self):
 		return os.path.join(os.path.dirname(__file__), 'data')
-	
-	@drop_database
-	def test_upload_image(self):
-		'''It should accept a single image''' 
-		
-		self._upload('image.png')
-	
-	@drop_database
-	def test_upload_tgz(self):
-		'''It should accept a tar.gz file''' 
-		
-		self._upload('image.png.tar.gz')
-		
-	@drop_database
-	def test_upload_zip(self):
-		'''It should accept a zip file''' 
-		
-		self._upload('image.png.zip')
 	
 	def _upload(self, filename):
 		file_data = open(os.path.join(self.data_dir, filename), 'rb').read()
@@ -64,11 +47,28 @@ class TestProcessor(ServerBase):
 		
 		self.assertNotEqual(json_response['bytes_read'], 0)
 		self.assertEqual(json_response['bytes_read'], len(file_data))
+
+class TestProcessor(ServerBase, UploadMixIn, DatabaseCleanUpMixIn):
+	def test_upload_image(self):
+		'''It should accept a single image''' 
+		
+		self._upload('image.png')
+	
+	def test_upload_tgz(self):
+		'''It should accept a tar.gz file''' 
+		
+		self._upload('image.png.tar.gz')
+		
+	def test_upload_zip(self):
+		'''It should accept a zip file''' 
+		
+		self._upload('image.png.zip')
 	
 	def test_process_queue(self): 
 		'''It should process the queue until empty and images should be saved'''
 		
 		self._upload('image.png')
+		self._upload('tagged_image.png')
 		
 		for i in range(1, 10):
 			response = self.fetch('/upload_queue?_format=json')

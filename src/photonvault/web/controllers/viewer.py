@@ -1,6 +1,6 @@
 #encoding=utf8
 '''Web views'''
-
+#
 # This file is part of Photon Vault.
 # 
 # Photon Vault is free software: you can redistribute it and/or modify
@@ -15,10 +15,14 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
+#
+from photonvault.web.controllers.database import Database
+from photonvault.web.models.collection import Item
+from tornado.web import Controller, RequestHandler, URLSpec
+import pymongo
+from photonvault.web.utils.render import render_response
 
 __docformat__ = 'restructuredtext en'
-
-from tornado.web import Controller, RequestHandler, URLSpec
 
 
 class Viewer(Controller):
@@ -28,11 +32,56 @@ class Viewer(Controller):
 		]
 
 
-class OverviewHandler(RequestHandler):
+class ViewMixIn(object):
+	SORT_DATE = 'date'
+	SORT_DATE_UPLOADED = 'date_uploaded'
+	ORDER_ASCENDING = 'ascending'
+	ORDER_DESCENDING = 'descending'
+	
+	def get_items(self, page=0, limit=100, sort=SORT_DATE_UPLOADED, 
+	order=ORDER_DESCENDING):
+		if sort == ViewMixIn.SORT_DATE_UPLOADED:
+			sort_key = '_id'
+		else:
+			sort_key = Item.DATE
+		
+		if order == ViewMixIn.ORDER_ASCENDING:
+			sort_direction = pymongo.ASCENDING
+		else:
+			sort_direction = pymongo.DESCENDING
+	
+		return self.controllers[Database].db[Item.COLLECTION].find(
+			skip=page * limit,
+			limit=limit,
+			sort=[(sort_key, sort_direction)],
+		)
+	
+	def get_item_count(self):
+		return self.controllers[Database].db[Item.COLLECTION].count()
+
+
+class OverviewHandler(RequestHandler, ViewMixIn):
+	@render_response
 	def get(self):
-		self.render('layout/layout.html')
+		limit = 100
+		count = self.get_item_count()
+		page = max(0, int(self.get_argument('page', 0)))
+		items = list(self.get_items(page, limit=100, sort=ViewMixIn.SORT_DATE))
+		
+		return {
+			'_template': 'layout/layout.html',
+			'items': items,
+			'paging': {
+				'page': page,
+				'limit': limit,
+				'count': count,
+			},
+		}
 
 
-class SingleViewHandler(RequestHandler):
+
+
+class SingleViewHandler(RequestHandler, ViewMixIn):
 	pass
+
 

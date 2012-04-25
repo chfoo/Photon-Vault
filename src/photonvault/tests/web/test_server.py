@@ -18,11 +18,15 @@
 #
 from photonvault.web.app import Application
 from tornado.testing import AsyncHTTPTestCase
-import functools
 import httplib
 import os.path
 import unittest
 
+
+class DatabaseCleanUpMixIn(object):
+	def tearDown(self):
+		response = self.fetch('/database/drop')
+		self.assertEqual(response.code, httplib.OK)
 
 class ServerBase(AsyncHTTPTestCase):
 	def get_app(self):
@@ -58,21 +62,6 @@ class TestServer(ServerBase):
 		self.assertEqual(response.code, httplib.OK)
 		self.assertEqual(response.headers['Content-Type'], 'text/css')
 
-
-def drop_database(f, pre=True, post=True):
-	@functools.wraps(f)
-	def wrapper(self):
-		if pre:
-			response = self.fetch('/database/drop')
-			self.assertEqual(response.code, httplib.OK)
-		
-		f(self)
-		
-		if post:
-			response = self.fetch('/database/drop')
-			self.assertEqual(response.code, httplib.OK)
-	
-	return wrapper
 
 if __name__ == "__main__":
 	#import sys;sys.argv = ['', 'Test.testName']

@@ -1,5 +1,5 @@
 #encoding=utf8
-'''Test database'''
+'''Test photo viewing'''
 #
 # This file is part of Photon Vault.
 # 
@@ -16,27 +16,32 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
-from photonvault.tests.web.test_server import ServerBase, ProductionServerBase
+from photonvault.tests.web.test_controller_processor import UploadMixIn
+from photonvault.tests.web.test_server import ServerBase, DatabaseCleanUpMixIn
 import httplib
+import json
 import unittest
 
-class TestDatabase(ServerBase):
-	def test_database_delete(self):
-		'''It should delete the database'''
+
+class TestViewer(ServerBase, UploadMixIn, DatabaseCleanUpMixIn):
+	def test_overview(self):
+		'''It should render page with two thumbnails'''
 		
-		response = self.fetch('/database/drop')
+		self._upload('image.png')
+		self._upload('tagged_image.png')
+		
+		response = self.fetch('/')
 		
 		self.assertEqual(response.code, httplib.OK)
-
-
-class TestProductionDatabase(ProductionServerBase):
-	def test_upload_image(self):
-		'''It should not delete the database'''
 		
-		response = self.fetch('/database/drop')
+		response = self.fetch('/?_format=json')
 		
-		self.assertNotEqual(response.code, httplib.OK)
-
+		self.assertEqual(response.code, httplib.OK)
+		
+		json_response = json.loads(response.body)
+		
+		self.assertEqual(len(json_response['items']), 2)
+		
 	
 if __name__ == "__main__":
 	#import sys;sys.argv = ['', 'Test.testName']
