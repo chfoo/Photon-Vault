@@ -30,12 +30,12 @@ class UploadMixIn(object):
 	def data_dir(self):
 		return os.path.join(os.path.dirname(__file__), 'data')
 	
-	def _upload(self, filename):
+	def _upload(self, filename, use_json=True):
 		file_data = open(os.path.join(self.data_dir, filename), 'rb').read()
 		
 		post_data, content_type = urllib3.filepost.encode_multipart_formdata([
 			('file', file_data)])
-		response = self.fetch('/upload?_format=json', 
+		response = self.fetch('/upload?_format=json' if use_json else '/upload', 
 			method='POST',
 			headers={'Content-Type': content_type},
 			body=post_data,
@@ -43,26 +43,33 @@ class UploadMixIn(object):
 		
 		self.assertEqual(response.code, httplib.OK)
 		
-		json_response = json.loads(response.body)
-		
-		self.assertNotEqual(json_response['bytes_read'], 0)
-		self.assertEqual(json_response['bytes_read'], len(file_data))
+		if use_json:
+			json_response = json.loads(response.body)
+			
+			self.assertNotEqual(json_response['bytes_read'], 0)
+			self.assertEqual(json_response['bytes_read'], len(file_data))
+		else:
+			self.assertNotEqual(len(response.body), 0)
+	
 
 class TestProcessor(ServerBase, UploadMixIn, DatabaseCleanUpMixIn):
 	def test_upload_image(self):
 		'''It should accept a single image''' 
 		
 		self._upload('image.png')
+		self._upload('image.png', False)
 	
 	def test_upload_tgz(self):
 		'''It should accept a tar.gz file''' 
 		
 		self._upload('image.png.tar.gz')
+		self._upload('image.png.tar.gz', False)
 		
 	def test_upload_zip(self):
 		'''It should accept a zip file''' 
 		
 		self._upload('image.png.zip')
+		self._upload('image.png.zip', False)
 	
 	def test_process_queue(self): 
 		'''It should process the queue until empty and images should be saved'''

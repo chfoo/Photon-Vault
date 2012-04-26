@@ -69,7 +69,7 @@ class OverviewHandler(RequestHandler, ViewMixIn):
 		items = list(self.get_items(page, limit=100, sort=ViewMixIn.SORT_DATE))
 		
 		return {
-			'_template': 'layout/layout.html',
+			'_template': 'viewer/overview.html',
 			'items': items,
 			'paging': {
 				'page': page,

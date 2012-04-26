@@ -62,30 +62,27 @@ class QueueProcessor(multiprocessing.Process):
 				QueueProcessor.SLEEP_TIME)
 			self.controller.queue_processor_event.clear()
 			
-			# TODO: This logic assumes only 1 processor. Make this support
-			# many processors
-			result = self.db[UploadQueue.COLLECTION].find_one()
+			while self.db[UploadQueue.COLLECTION].count():
+				# TODO: This logic assumes only 1 processor. Make this support
+				# many processors
+				result = self.db[UploadQueue.COLLECTION].find_one()
+				
+				if not result:
+					continue
+				
+				file_id = result[UploadQueue.FILE_ID]
+				file_obj = self.fs.get(file_id)
+				original_filename = file_obj.filename
+				temp_file = tempfile.NamedTemporaryFile()
 			
-			if not result:
-				continue
+				shutil.copyfileobj(file_obj, temp_file)
+				
+				self.attempt_read_tar_file(temp_file)
+				self.attempt_read_zip_file(temp_file)
+				self.insert_image(temp_file, original_filename)
+				
+				self.db[UploadQueue.COLLECTION].remove({'_id': result['_id']})
 			
-			file_id = result[UploadQueue.FILE_ID]
-			file_obj = self.fs.get(file_id)
-			original_filename = file_obj.filename
-			temp_file = tempfile.NamedTemporaryFile()
-		
-			shutil.copyfileobj(file_obj, temp_file)
-			
-			if self.attempt_read_tar_file(file_obj):
-				continue
-			
-			if self.attempt_read_zip_file(file_obj):
-				continue
-			
-			self.insert_image(file_obj, original_filename)
-			
-			self.db.delete({'_id': result['_id']})
-		
 	
 	def attempt_read_tar_file(self, file_obj):
 		try:
@@ -113,12 +110,13 @@ class QueueProcessor(multiprocessing.Process):
 			f = zip_file.open(info.filename)
 			
 			self.insert_image(f, info.filename)
+		
+		return True
 	
 	def insert_image(self, file_obj, filename):
 		file_obj.seek(0)
 		
 		if self.is_readable_image(file_obj.name):
-			
 			db_file = self.fs.new_file(filename=filename)
 			
 			shutil.copyfileobj(file_obj, db_file)
@@ -134,11 +132,15 @@ class QueueProcessor(multiprocessing.Process):
 				Item.TITLE: os.path.basename(filename),
 				Item.DATE: date,
 			})
+			
+			return True
 	
 	def is_readable_image(self, path):
 		try:
 			PIL.Image.open(path)
 		except IOError:
+			return False
+		except ValueError:
 			return False
 		
 		return True
@@ -195,7 +197,7 @@ class UploadHandler(FileUploadHandler):
 		self.controllers[Processor].queue_processor_event.set()
 		
 		return {
-			'_template': 'processor/upload.html',
+			'_template': 'processor/upload_success.html',
 			'bytes_read': bytes_read,
 			'file_id': str(file_id),
 			'_redirect': '/queue',

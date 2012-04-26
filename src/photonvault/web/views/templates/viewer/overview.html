@@ -1,0 +1,15 @@
+{% extends '../layout/layout.html' %}
+
+{% block layout_title %}
+{{ _('Overview') }}
+{% end %}
+
+{% block layout_content %}
+
+{% for item in items %}
+	{% module Template('layout/widgets/thumbnail.html', 
+		image_src_url='', image_target_url='', image_title=item.get('title', '')) %}
+
+{% end %}
+
+{% end %}
