@@ -25,7 +25,16 @@ class Item(object):
 	DATE = 'date'
 	FILE_ID = 'file_id'
 
+
 class UploadQueue(object):
 	COLLECTION = 'upload_queue'
 	FILE_ID = 'file_id'
+
+
+class Thumbnail(object):
+	COLLECTION = 'thumbnails'
+	SIZES = 'sizes'
 	
+	class Size(object):
+		TIME = 'time'
+		DATA = 'data'

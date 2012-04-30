@@ -109,7 +109,10 @@ class QueueProcessor(multiprocessing.Process):
 		for info in zip_file.infolist():
 			f = zip_file.open(info.filename)
 			
-			self.insert_image(f, info.filename)
+			with tempfile.NamedTemporaryFile() as dest_f:
+				shutil.copyfileobj(f, dest_f)
+				dest_f.seek(0)
+				self.insert_image(dest_f, info.filename)
 		
 		return True
 	
@@ -121,7 +124,9 @@ class QueueProcessor(multiprocessing.Process):
 			
 			shutil.copyfileobj(file_obj, db_file)
 			
-			file_id = db_file.close()
+			db_file.close()
+			
+			file_id = db_file._id
 			
 			file_obj.seek(0)
 			
@@ -129,7 +134,7 @@ class QueueProcessor(multiprocessing.Process):
 			
 			self.db[Item.COLLECTION].insert({
 				Item.FILE_ID: file_id,
-				Item.TITLE: os.path.basename(filename),
+				Item.TITLE: filename,
 				Item.DATE: date,
 			})
 			

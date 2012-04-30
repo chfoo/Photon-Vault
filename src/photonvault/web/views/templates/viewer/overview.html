@@ -8,7 +8,8 @@
 
 {% for item in items %}
 	{% module Template('layout/widgets/thumbnail.html', 
-		image_src_url='', image_target_url='', image_title=item.get('title', '')) %}
+		image_src_url='/thumbnail/%s/50' % item['_id'], 
+		image_target_url='', image_title=item.get('title', '')) %}
 
 {% end %}
 

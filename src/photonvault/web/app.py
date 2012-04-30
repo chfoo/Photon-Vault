@@ -20,6 +20,7 @@
 from photonvault.web.controllers.database import Database
 from photonvault.web.controllers.processor import Processor
 from photonvault.web.controllers.resource import Resource
+from photonvault.web.controllers.thumbnail import ThumbnailGenerator
 from photonvault.web.controllers.viewer import Viewer
 import ConfigParser
 import os.path
@@ -37,6 +38,7 @@ class Application(tornado.web.Application):
 				Resource,
 				Viewer,
 				Processor,
+				ThumbnailGenerator,
 			],
 			template_path=self._get_template_path(),
 		)
