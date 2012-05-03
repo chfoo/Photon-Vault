@@ -1,0 +1,41 @@
+{% extends '../layout/layout.html' %}
+
+{% block layout_title %}
+{{ _('Editing: ') }} {{ title }}
+{% end %}
+
+{% block layout_content %}
+
+<img src="/thumbnail/{{ id }}/200"/>
+
+<form method="post">
+
+	<label>
+		{{ _('Title: ') }}
+		
+		<input type="text" name="title" value="{{ title }}"/>
+	</label>
+	
+	<label>
+		{{ _('Description: ') }}
+		
+		<textarea name="description">{{ description }}</textarea>
+	</label>
+	
+	<label>
+		{{ _('Date: ') }}
+		
+		<input type="datetime" name="date" value="{{ date }}"/>
+	</label>
+	
+	<label>
+		{{ _('Tags: ') }}
+		
+		<textarea name="tags">{{ tags }}</textarea>
+	</label>
+	
+	<input type="submit" name="submit" value="{{ _('Save') }}"/>
+</form>
+		
+
+{% end %}

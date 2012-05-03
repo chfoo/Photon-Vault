@@ -11,6 +11,20 @@
 <img src="/thumbnail/{{ str(item['_id']) }}/500"/>
 
 <p>{{ item.get('description', '')}}</p>
-		
+
+<p>{{ locale.format_date(item['date']) }}</p>
+
+<p>
+{% for tag in item.get('tags', []) %}
+
+<a href="/tag/{{ tag }}"/>{{ tag }}</a>
+
+{% end %}
+</p>
+
+<p>
+	<a href="/edit/{{ str(item['_id']) }}">{{ _('Edit') }}</a>
+	<a href="/full/{{ str(item['_id']) }}">{{ _('Download') }}</a>
+</p>
 
 {% end %}

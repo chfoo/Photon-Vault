@@ -19,10 +19,11 @@
 from photonvault.web.controllers.database import Database
 from photonvault.web.models.collection import Item
 from photonvault.web.utils.render import render_response
-from tornado.web import Controller, RequestHandler, URLSpec, HTTPError
+from tornado.web import Controller, RequestHandler, URLSpec, HTTPError, \
+	StreamingFileMixIn
+import bson.objectid
 import httplib
 import pymongo
-import bson.objectid
 
 __docformat__ = 'restructuredtext en'
 
@@ -32,6 +33,7 @@ class Viewer(Controller):
 		return [
 			URLSpec('/', OverviewHandler),
 			URLSpec('/item/(.+)', SingleViewHandler),
+			URLSpec('/full/(.+)', FullViewHandler)
 		]
 
 
@@ -97,3 +99,26 @@ class SingleViewHandler(RequestHandler, ViewMixIn):
 			}
 		else:
 			raise HTTPError(httplib.NOT_FOUND)
+
+
+class FullViewHandler(RequestHandler, StreamingFileMixIn):
+	def head(self, str_id):
+		self.get(str_id)
+	
+	def get(self, str_id):
+		obj_id = bson.objectid.ObjectId(str_id)
+		
+		result = self.controllers[Database].db[Item.COLLECTION].find_one(
+			{'_id': obj_id})
+		
+		if result:
+			f = self.controllers[Database].fs.get(result[Item.FILE_ID])
+			
+			if f:
+				self.serve_file(f, download_filename=result[Item.TITLE], 
+					mimetype='image', size=f.length, 
+					last_modified=f.upload_date)
+				return
+		
+		raise HTTPError(httplib.NOT_FOUND)
+		
