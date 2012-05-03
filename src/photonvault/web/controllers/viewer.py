@@ -18,9 +18,11 @@
 #
 from photonvault.web.controllers.database import Database
 from photonvault.web.models.collection import Item
-from tornado.web import Controller, RequestHandler, URLSpec
-import pymongo
 from photonvault.web.utils.render import render_response
+from tornado.web import Controller, RequestHandler, URLSpec, HTTPError
+import httplib
+import pymongo
+import bson.objectid
 
 __docformat__ = 'restructuredtext en'
 
@@ -29,6 +31,7 @@ class Viewer(Controller):
 	def get_handlers(self):
 		return [
 			URLSpec('/', OverviewHandler),
+			URLSpec('/item/(.+)', SingleViewHandler),
 		]
 
 
@@ -79,9 +82,18 @@ class OverviewHandler(RequestHandler, ViewMixIn):
 		}
 
 
-
-
 class SingleViewHandler(RequestHandler, ViewMixIn):
-	pass
-
-
+	@render_response
+	def get(self, str_id):
+		obj_id = bson.objectid.ObjectId(str_id)
+		
+		result = self.controllers[Database].db[Item.COLLECTION].find_one(
+			{'_id': obj_id})
+		
+		if result:
+			return {
+				'_template': 'viewer/single.html',
+				'item': result,
+			}
+		else:
+			raise HTTPError(httplib.NOT_FOUND)

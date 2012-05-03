@@ -18,7 +18,8 @@
 #
 from photonvault.web.controllers.database import Database
 from photonvault.web.models.collection import Item, Thumbnail
-from tornado.web import Controller, RequestHandler, URLSpec, StreamingFileMixIn
+from tornado.web import Controller, RequestHandler, URLSpec, StreamingFileMixIn, \
+	HTTPError
 import PIL.Image
 import bson
 import bson.binary
@@ -46,8 +47,7 @@ class ThumbnailHandler(RequestHandler, StreamingFileMixIn):
 	
 	def get(self, item_id_str, size):
 		if int(size) not in ThumbnailHandler.SIZES:
-			self.set_status(httplib.NOT_FOUND)
-			return
+			raise HTTPError(httplib.NOT_FOUND)
 		
 		item_id = bson.objectid.ObjectId(item_id_str)
 		
