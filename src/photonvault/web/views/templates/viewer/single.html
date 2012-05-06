@@ -27,4 +27,20 @@
 	<a href="/full/{{ str(item['_id']) }}">{{ _('Download') }}</a>
 </p>
 
+<p>
+{% if 'newer' in globals() %}
+	<a href="/item/{{ newer }}">
+		<img src="/thumbnail/{{ newer }}/50"/> {{ _('Newer') }}
+	</a>
+{% end %}
+
+
+{% if 'older' in globals() %}
+	<a href="/item/{{ older }}">
+		<img src="/thumbnail/{{ older }}/50"/> {{ _('Older') }}
+	</a>
+{% end %}
+
+</p>
+
 {% end %}

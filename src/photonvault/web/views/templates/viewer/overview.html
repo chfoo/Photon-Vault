@@ -6,11 +6,21 @@
 
 {% block layout_content %}
 
-{% for item in items %}
+{% for item in items[:paging['limit']] %}
 	{% module Template('layout/widgets/thumbnail.html', 
-		image_src_url='/thumbnail/%s/50' % item['_id'], 
+		image_src_url='/thumbnail/%s/200' % item['_id'], 
 		image_target_url='/item/%s' % item['_id'], image_title=item.get('title', '')) %}
 
 {% end %}
+
+<p>
+{% if paging['has_newer'] %}
+	<a href="?newer_date={{ items[0]['date'] }}">{{ _('Newer') }}</a>
+{% end %}
+
+{% if paging['has_older'] %}
+	<a href="?older_date={{ items[-1]['date'] }}">{{ _('Older') }}</a>
+{% end %}
+</p>
 
 {% end %}
