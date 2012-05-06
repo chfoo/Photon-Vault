@@ -6,12 +6,23 @@
 
 {% block layout_content %}
 
+<div class="overview-thumbnails">
+{% set _prev_year = None %}
+
 {% for item in items[:paging['limit']] %}
+	{% if item['date'].year != _prev_year %}
+		{% set _prev_year = item['date'].year %}
+		<h2 class="overview-yearDeliminator">{{ item['date'].year }}</h2>
+	{% end %}
+
 	{% module Template('layout/widgets/thumbnail.html', 
 		image_src_url='/thumbnail/%s/200' % item['_id'], 
 		image_target_url='/item/%s' % item['_id'], image_title=item.get('title', '')) %}
 
 {% end %}
+
+</div>
+
 
 <p>
 {% if paging['has_newer'] %}

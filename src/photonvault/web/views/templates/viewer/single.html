@@ -10,24 +10,25 @@
 
 <img src="/thumbnail/{{ str(item['_id']) }}/500"/>
 
-<p>{{ item.get('description', '')}}</p>
+<p class="singleItem-description">{{ item.get('description', '')}}</p>
 
-<p>{{ locale.format_date(item['date']) }}</p>
+<p class="singleItem-date">{{ locale.format_date(item['date']) }}</p>
 
-<p>
+<p class="singleItem-tags">
 {% for tag in item.get('tags', []) %}
 
-<a href="/tag/{{ tag }}"/>{{ tag }}</a>
+<a href="/tag/{{ tag }}">{{ tag }}</a>
 
 {% end %}
 </p>
 
-<p>
+<p class="singleItem-actions">
 	<a href="/edit/{{ str(item['_id']) }}">{{ _('Edit') }}</a>
 	<a href="/full/{{ str(item['_id']) }}">{{ _('Download') }}</a>
 </p>
 
-<p>
+<nav class="singleItem-nav">
+
 {% if 'newer' in globals() %}
 	<a href="/item/{{ newer }}">
 		<img src="/thumbnail/{{ newer }}/50"/> {{ _('Newer') }}
@@ -41,6 +42,6 @@
 	</a>
 {% end %}
 
-</p>
+</nav>
 
 {% end %}

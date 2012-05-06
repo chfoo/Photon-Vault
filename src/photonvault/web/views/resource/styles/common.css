@@ -1,0 +1,38 @@
+html, body {
+	margin: 0px;
+	padding: 0px;
+	font-family: sans-serif;
+	background-color: #565656;
+	color: #DADADA;
+	font: 1em;
+}
+
+a:link {
+	color: #BDCDE0;
+}
+
+a:visited {
+	color: #C7BDE0;
+}
+
+a img {
+	border: 0px;
+}
+
+#site-footer {
+	font-size: small;
+}
+
+.site-nav, #site-header, #site-footer, #site-content > * {
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+}
+
+.site-nav {
+	background-color: #313131;
+}
+
+nav {
+	padding-top: .5em;
+	padding-bottom: .5em;
+}

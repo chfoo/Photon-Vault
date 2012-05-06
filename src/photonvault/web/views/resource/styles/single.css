@@ -1,0 +1,12 @@
+.singleItem-tags a {
+	background-color: #676767;
+	padding: 0.25em;
+}
+
+.singleItem-nav {
+	background-color: #313131;
+}
+
+.singleItem-date {
+	font-style: italic;
+}

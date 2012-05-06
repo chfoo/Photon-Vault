@@ -1,0 +1,12 @@
+label {
+	display: block;
+}
+
+label > * {
+	display: block;
+	width: 20em;
+}
+
+input[type=submit] {
+	display: block;
+}
