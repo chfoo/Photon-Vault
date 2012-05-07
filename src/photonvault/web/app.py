@@ -43,6 +43,7 @@ class Application(tornado.web.Application):
 				Edit,
 			],
 			template_path=self._get_template_path(),
+			max_streaming_upload_size=2147483648,
 		)
 	
 	def _get_template_path(self):

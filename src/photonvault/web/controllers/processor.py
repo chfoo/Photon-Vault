@@ -22,16 +22,19 @@ from photonvault.web.utils.render import render_response
 from tornado.web import Controller, RequestHandler, URLSpec, FileUploadHandler
 import PIL.Image
 import datetime
+import logging
 import multiprocessing
 import os.path
 import pyexiv2
 import shutil
 import tarfile
 import tempfile
+import time
 import zipfile
 
 __docformat__ = 'restructuredtext en'
 
+_logger = logging.getLogger(__name__)
 
 class Processor(Controller):
 	def get_handlers(self):
@@ -41,6 +44,7 @@ class Processor(Controller):
 		]
 	
 	def init(self):
+		_logger.debug('Starting processor process')
 		self.queue_processor_event = multiprocessing.Event()
 		self.queue_processor = QueueProcessor(self)
 		self.queue_processor.start()
@@ -58,9 +62,15 @@ class QueueProcessor(multiprocessing.Process):
 	
 	def run(self):
 		while True:
+			_logger.debug('Processor sleeping')
+			
 			self.controller.queue_processor_event.wait(
 				QueueProcessor.SLEEP_TIME)
 			self.controller.queue_processor_event.clear()
+			
+			_logger.debug('Processor woken')
+			
+			time.sleep(2)
 			
 			while self.db[UploadQueue.COLLECTION].count():
 				# TODO: This logic assumes only 1 processor. Make this support
@@ -76,22 +86,28 @@ class QueueProcessor(multiprocessing.Process):
 				temp_file = tempfile.NamedTemporaryFile()
 			
 				shutil.copyfileobj(file_obj, temp_file)
+				temp_file.seek(0)
 				
-				self.attempt_read_tar_file(temp_file)
-				self.attempt_read_zip_file(temp_file)
-				self.insert_image(temp_file, original_filename)
+				if not self.attempt_read_tar_file(temp_file):
+					if not self.attempt_read_zip_file(temp_file):
+						self.insert_image(temp_file, original_filename)
 				
 				self.db[UploadQueue.COLLECTION].remove({'_id': result['_id']})
 			
 	
 	def attempt_read_tar_file(self, file_obj):
+		_logger.debug('Attempt to read tar file')
+		
 		try:
 			tar_file = tarfile.TarFile(fileobj=file_obj, mode='r')
 		except tarfile.ReadError:
+			_logger.debug('Could not read tar file')
 			file_obj.seek(0)
 			return
 		
 		for member in tar_file.getmembers():
+			_logger.debug('Got tar member %s', member.name)
+			
 			if member.isfile():
 				f = tar_file.extractfile(member)
 				
@@ -100,13 +116,17 @@ class QueueProcessor(multiprocessing.Process):
 		return True
 		
 	def attempt_read_zip_file(self, file_obj):
+		_logger.debug('Attempt read zip file')
+		
 		try:
 			zip_file = zipfile.ZipFile(file_obj, mode='r')
 		except zipfile.BadZipfile:
+			_logger.debug('Could not read zip file')
 			file_obj.seek(0)
 			return
 		
 		for info in zip_file.infolist():
+			_logger.debug('Got zip member %s', info.filename)
 			f = zip_file.open(info.filename)
 			
 			with tempfile.NamedTemporaryFile() as dest_f:
@@ -117,6 +137,8 @@ class QueueProcessor(multiprocessing.Process):
 		return True
 	
 	def insert_image(self, file_obj, filename):
+		_logger.debug('Attempt insert image with name %s', filename)
+		
 		file_obj.seek(0)
 		
 		if self.is_readable_image(file_obj.name):
@@ -137,6 +159,8 @@ class QueueProcessor(multiprocessing.Process):
 				Item.TITLE: filename,
 				Item.DATE: date,
 			})
+			
+			_logger.debug('Inserted image, file id=%s', file_id)
 			
 			return True
 	

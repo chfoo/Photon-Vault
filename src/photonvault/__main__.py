@@ -20,6 +20,15 @@ from photonvault.web.app import Application
 import argparse
 import tornado.ioloop
 from ConfigParser import ConfigParser
+import logging
+
+log_levels = {
+	u'debug': logging.DEBUG,
+	u'info': logging.INFO,
+	u'warning': logging.WARNING,
+	u'error': logging.ERROR,
+	u'critical': logging.CRITICAL,
+}
 
 def main():
 	arg_parser = argparse.ArgumentParser(
@@ -31,10 +40,18 @@ def main():
 	
 	args = arg_parser.parse_args()
 	
-	application = Application(args.config_filename[0])
-	
 	config_parser = ConfigParser()
 	config_parser.read(args.config_filename)
+	
+	if config_parser.has_option(u'application', u'log_level'):
+		level_str = config_parser.get(u'application', u'log_level')
+		level = log_levels.get(level_str.lower())
+		
+		if level:
+			logging.basicConfig(level=level)
+			logging.debug('Logging enabled')
+	
+	application = Application(args.config_filename[0])
 	
 	application.listen(config_parser.getint(u'server', u'port'), 
 		config_parser.get(u'server', u'address'))
