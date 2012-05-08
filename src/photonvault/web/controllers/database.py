@@ -33,24 +33,36 @@ class Database(tornado.web.Controller):
 		
 		return []
 	
-	def init(self):
+	@classmethod
+	def get_host_and_port(cls, config_parser):
 		host = u'localhost'
 		port = 27017
 		
-		if self.application.config_parser.has_option(u'database', u'host'):
-			host = self.application.config_parser.get(u'database', u'host')
+		if config_parser.has_option(u'database', u'host'):
+			host = config_parser.get(u'database', u'host')
 			
-		if self.application.config_parser.has_option(u'database', u'port'):
-			port = self.application.config_parser.getint(u'database', u'port')
+		if config_parser.has_option(u'database', u'port'):
+			port = config_parser.getint(u'database', u'port')
+		
+		return (host, port)
+	
+	@classmethod
+	def get_database_name(cls, config_parser):
+		name = u'photonvault'
+		
+		if config_parser.has_option(u'database', u'name'):
+			name = config_parser.get(u'database', u'name')
+		
+		return name
+	
+	def init(self):
+		host, port = Database.get_host_and_port(self.application.config_parser)
 		
 		self.connection = pymongo.connection.Connection(host, port)
 	
 	@property
 	def db(self):
-		name = u'photonvault'
-		
-		if self.application.config_parser.has_option(u'database', u'name'):
-			name = self.application.config_parser.get(u'database', u'name')
+		name = Database.get_database_name(self.application.config_parser)
 		
 		return self.connection[name]
 	

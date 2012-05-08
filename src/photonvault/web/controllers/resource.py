@@ -20,6 +20,7 @@ __docformat__ = 'restructuredtext en'
 
 from tornado.web import Controller, URLSpec, StaticFileHandler
 import glob
+import os
 import os.path
 import shutil
 import tempfile
@@ -37,14 +38,18 @@ class Resource(Controller):
 		self.build_resources()
 	
 	def build_resources(self):
-		self.scripts_file = tempfile.NamedTemporaryFile('wt', suffix='.js')
-		self.styles_file = tempfile.NamedTemporaryFile('wt', suffix='.css')
+		self.scripts_file = tempfile.NamedTemporaryFile('wt', suffix='.js',
+			delete=False)
+		self.styles_file = tempfile.NamedTemporaryFile('wt', suffix='.css',
+			delete=False)
 		self.scripts_file_dir, self.scripts_file_name = os.path.split(
 			self.scripts_file.name)
 		self.styles_file_dir, self.styles_file_name = os.path.split(
 			self.styles_file.name)
 		self.concatinate_scripts(self.scripts_file)
 		self.concatinate_styles(self.styles_file)
+		self.scripts_file.close()
+		self.styles_file.close()
 	
 	def concatinate_scripts(self, destination_file):
 		self.concatinate_something(destination_file, u'scripts', u'js')
@@ -70,6 +75,8 @@ class Resource(Controller):
 		destination_file.flush()
 	
 	def __del__(self):
+		os.remove(self.scripts_file.name)
+		os.remove(self.styles_file.name)
 		del self.scripts_file
 		del self.styles_file
 		

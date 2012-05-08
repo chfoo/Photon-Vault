@@ -31,6 +31,8 @@ import tarfile
 import tempfile
 import time
 import zipfile
+import pymongo
+import gridfs
 
 __docformat__ = 'restructuredtext en'
 
@@ -46,30 +48,47 @@ class Processor(Controller):
 	def init(self):
 		_logger.debug('Starting processor process')
 		self.queue_processor_event = multiprocessing.Event()
-		self.queue_processor = QueueProcessor(self)
+		
+		host, port = Database.get_host_and_port(self.application.config_parser)
+		dbname = Database.get_database_name(self.application.config_parser)
+		self.queue_processor = QueueProcessor(self.queue_processor_event, 
+			host, port, dbname)
+		
 		self.queue_processor.start()
 
 
 class QueueProcessor(multiprocessing.Process):
 	SLEEP_TIME = 43200 # 12 hours
 	
-	def __init__(self, controller):
+	def __init__(self, queue_processor_event, host, port, database_name):
 		multiprocessing.Process.__init__(self)
 		self.daemon = True
-		self.controller = controller
-		self.db = self.controller.application.controllers[Database].db
-		self.fs = self.controller.application.controllers[Database].fs
+		self.queue_processor_event = queue_processor_event
+		self.host = host
+		self.port = port
+		self.database_name = database_name
 	
 	def run(self):
+		# Connection deferred to here for Windows multiprocessing compatibility
+		self.logger = logging.getLogger(__name__)
+		
+		# for Windows debugging:
+		# logging.basicConfig(filename="photonvaultlog.txt", level=logging.DEBUG)
+		
+		self.connection = pymongo.connection.Connection(self.host, self.port)
+		self.db = self.connection[self.database_name]
+		self.fs = gridfs.GridFS(self.db)
+		
 		while True:
-			_logger.debug('Processor sleeping')
+			self.logger.debug('Processor sleeping')
 			
-			self.controller.queue_processor_event.wait(
+			self.queue_processor_event.wait(
 				QueueProcessor.SLEEP_TIME)
-			self.controller.queue_processor_event.clear()
+			self.queue_processor_event.clear()
 			
-			_logger.debug('Processor woken')
+			self.logger.debug('Processor woken')
 			
+			# Database may not be finished committing, wait a bit
 			time.sleep(2)
 			
 			while self.db[UploadQueue.COLLECTION].count():
@@ -83,76 +102,79 @@ class QueueProcessor(multiprocessing.Process):
 				file_id = result[UploadQueue.FILE_ID]
 				file_obj = self.fs.get(file_id)
 				original_filename = file_obj.filename
-				temp_file = tempfile.NamedTemporaryFile()
+				temp_file = tempfile.NamedTemporaryFile(delete=False)
 			
 				shutil.copyfileobj(file_obj, temp_file)
-				temp_file.seek(0)
+				temp_file.close()
 				
-				if not self.attempt_read_tar_file(temp_file):
-					if not self.attempt_read_zip_file(temp_file):
-						self.insert_image(temp_file, original_filename)
+				if not self.attempt_read_tar_file(temp_file.name):
+					if not self.attempt_read_zip_file(temp_file.name):
+						self.insert_image(temp_file.name, original_filename)
 				
+				os.remove(temp_file.name)
 				self.db[UploadQueue.COLLECTION].remove({'_id': result['_id']})
+				self.fs.delete(result[UploadQueue.FILE_ID])
 			
 	
-	def attempt_read_tar_file(self, file_obj):
-		_logger.debug('Attempt to read tar file')
+	def attempt_read_tar_file(self, path):
+		self.logger.debug('Attempt to read tar file')
 		
 		try:
-			tar_file = tarfile.TarFile(fileobj=file_obj, mode='r')
+			tar_file = tarfile.TarFile(path, mode='r')
 		except tarfile.ReadError:
-			_logger.debug('Could not read tar file')
-			file_obj.seek(0)
+			self.logger.debug('Could not read tar file')
 			return
 		
 		for member in tar_file.getmembers():
-			_logger.debug('Got tar member %s', member.name)
+			self.logger.debug('Got tar member %s', member.name)
 			
 			if member.isfile():
 				f = tar_file.extractfile(member)
+				dest_f = tempfile.NamedTemporaryFile(delete=False)
 				
-				self.insert_image(f, member.name)
+				shutil.copyfileobj(f, dest_f)
+				dest_f.close()
+				self.insert_image(dest_f.name, member.name)
+				os.remove(dest_f.name)
 		
 		return True
 		
-	def attempt_read_zip_file(self, file_obj):
-		_logger.debug('Attempt read zip file')
+	def attempt_read_zip_file(self, path):
+		self.logger.debug('Attempt read zip file')
 		
 		try:
-			zip_file = zipfile.ZipFile(file_obj, mode='r')
+			zip_file = zipfile.ZipFile(path, mode='r')
 		except zipfile.BadZipfile:
-			_logger.debug('Could not read zip file')
-			file_obj.seek(0)
+			self.logger.debug('Could not read zip file')
 			return
 		
 		for info in zip_file.infolist():
-			_logger.debug('Got zip member %s', info.filename)
+			self.logger.debug('Got zip member %s', info.filename)
 			f = zip_file.open(info.filename)
 			
-			with tempfile.NamedTemporaryFile() as dest_f:
-				shutil.copyfileobj(f, dest_f)
-				dest_f.seek(0)
-				self.insert_image(dest_f, info.filename)
+			dest_f = tempfile.NamedTemporaryFile(delete=False)
+			
+			shutil.copyfileobj(f, dest_f)
+			dest_f.close()
+			self.insert_image(dest_f.name, info.filename)
+			os.remove(dest_f.name)
 		
 		return True
 	
-	def insert_image(self, file_obj, filename):
-		_logger.debug('Attempt insert image with name %s', filename)
-		
-		file_obj.seek(0)
-		
-		if self.is_readable_image(file_obj.name):
+	def insert_image(self, path, filename):
+		self.logger.debug('Attempt insert image with name %s', filename)
+
+		if self.is_readable_image(path):
 			db_file = self.fs.new_file(filename=filename)
 			
-			shutil.copyfileobj(file_obj, db_file)
+			with open(path, 'rb') as file_obj:
+				shutil.copyfileobj(file_obj, db_file)
 			
 			db_file.close()
 			
 			file_id = db_file._id
 			
-			file_obj.seek(0)
-			
-			date = self.extract_date(file_obj.name) or datetime.datetime.utcnow()
+			date = self.extract_date(path) or datetime.datetime.utcnow()
 			
 			self.db[Item.COLLECTION].insert({
 				Item.FILE_ID: file_id,
@@ -160,7 +182,7 @@ class QueueProcessor(multiprocessing.Process):
 				Item.DATE: date,
 			})
 			
-			_logger.debug('Inserted image, file id=%s', file_id)
+			self.logger.debug('Inserted image, file id=%s', file_id)
 			
 			return True
 	
@@ -168,8 +190,10 @@ class QueueProcessor(multiprocessing.Process):
 		try:
 			PIL.Image.open(path)
 		except IOError:
+			# self.logger.exception("try read 1")
 			return False
 		except ValueError:
+			# self.logger.exception("try read 2")
 			return False
 		
 		return True
