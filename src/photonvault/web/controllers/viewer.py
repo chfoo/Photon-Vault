@@ -36,7 +36,8 @@ class Viewer(Controller):
 			URLSpec('/', OverviewHandler),
 			URLSpec('/tag/(.+)', OverviewHandler),
 			URLSpec('/item/(.+)', SingleViewHandler),
-			URLSpec('/full/(.+)', FullViewHandler)
+			URLSpec('/full/(.+)', FullViewHandler),
+			URLSpec('/all_tags', AllTagsHandler),
 		]
 	
 	def init(self):
@@ -89,7 +90,7 @@ class ViewMixIn(object):
 class OverviewHandler(RequestHandler, ViewMixIn):
 	@render_response
 	def get(self, tag=None):
-		limit = 100
+		limit = 500
 		count = self.get_item_count()
 		newer_date_str = self.get_argument('newer_date', None)
 		older_date_str = self.get_argument('older_date', None)
@@ -195,4 +196,15 @@ class FullViewHandler(RequestHandler, StreamingFileMixIn):
 				return
 		
 		raise HTTPError(httplib.NOT_FOUND)
+
+
+class AllTagsHandler(RequestHandler):
+	@render_response
+	def get(self):
+		tags =  self.controllers[Database].db[Item.COLLECTION].distinct(
+			Item.TAGS)
 		
+		return {
+			'_template': 'viewer/all_tags.html',
+			'tags': tags,
+		}

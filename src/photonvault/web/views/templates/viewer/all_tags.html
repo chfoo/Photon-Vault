@@ -1,0 +1,19 @@
+{% extends '../layout/layout.html' %}
+
+{% block layout_title %}
+{{ _('All Labels') }}
+{% end %}
+
+{% block layout_content %}
+
+<h1>{{ _('All Labels') }}</h1>
+
+<p>
+{% for tag in sorted(tags) %}
+
+<a class="itemTag" href="/tag/{{ tag }}">{{ tag }}</a>
+
+{% end %}
+</p>
+
+{% end %}

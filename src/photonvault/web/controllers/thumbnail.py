@@ -78,7 +78,7 @@ class ThumbnailHandler(RequestHandler, StreamingFileMixIn):
 		
 		with tempfile.TemporaryFile() as new_file:
 			image = PIL.Image.open(file_obj)
-			image.thumbnail([size, size])
+			image.thumbnail([size, size], PIL.Image.ANTIALIAS)
 			image.save(new_file, image.format)
 			new_file.seek(0)
 			

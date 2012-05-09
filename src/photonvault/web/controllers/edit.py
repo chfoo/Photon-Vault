@@ -30,6 +30,7 @@ class Edit(Controller):
 	def get_handlers(self):
 		return [
 			URLSpec('/edit/(.+)', EditSingleHandler),
+			URLSpec('/manage', ManageHandler),
 		]
 
 
@@ -70,4 +71,12 @@ class EditSingleHandler(RequestHandler):
 		
 		return {
 			'_redirect_url': '/item/%s' % obj_id
+		}
+
+
+class ManageHandler(RequestHandler):
+	@render_response
+	def get(self):
+		return {
+			'_template': 'edit/manage.html'
 		}
