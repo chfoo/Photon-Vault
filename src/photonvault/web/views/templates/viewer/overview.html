@@ -6,6 +6,10 @@
 
 {% block layout_content %}
 
+{% if tag %}
+<h1 class="overview-tagHeader">{{ tag }}</h1>
+{% end %}
+
 <div class="overview-thumbnails">
 {% set _prev_year = None %}
 

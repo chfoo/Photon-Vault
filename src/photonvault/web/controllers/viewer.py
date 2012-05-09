@@ -34,47 +34,61 @@ class Viewer(Controller):
 	def get_handlers(self):
 		return [
 			URLSpec('/', OverviewHandler),
+			URLSpec('/tag/(.+)', OverviewHandler),
 			URLSpec('/item/(.+)', SingleViewHandler),
 			URLSpec('/full/(.+)', FullViewHandler)
 		]
-
+	
+	def init(self):
+		self.application.controllers[Database].db[
+			Item.COLLECTION].ensure_index(Item.DATE)
+		self.application.controllers[Database].db[
+			Item.COLLECTION].ensure_index(Item.TAGS)
+		
 
 class ViewMixIn(object):
 	SORT_BY_DATE = 'date'
 	SORT_BY_DATE_UPLOADED = 'date_uploaded'
 	
-	def get_items_newer(self, date, limit=100, sort_by=SORT_BY_DATE):
-		if sort_by == ViewMixIn.SORT_BY_DATE_UPLOADED:
-			sort_key = '_id'
-		else:
-			sort_key = Item.DATE
-		
-		return self.controllers[Database].db[Item.COLLECTION].find(
-			{sort_key: {'$gt': date}},
-			limit=limit,
-			sort=[(sort_key, pymongo.ASCENDING)],
-		)
+	def get_items_newer(self, date, limit=100, sort_by=SORT_BY_DATE, tag=None):
+		return self._get_items(date, False, limit, sort_by, tag)
 	
-	def get_items_older(self, date, limit=100, sort_by=SORT_BY_DATE):
+	def get_items_older(self, date, limit=100, sort_by=SORT_BY_DATE, tag=None):
+		return self._get_items(date, True, limit, sort_by, tag)
+	
+	def _get_items(self, date, older=False, limit=100, sort_by=SORT_BY_DATE, tag=None):
 		if sort_by == ViewMixIn.SORT_BY_DATE_UPLOADED:
 			sort_key = '_id'
 		else:
 			sort_key = Item.DATE
 		
-		return reversed(list(self.controllers[Database].db[Item.COLLECTION].find(
-			{sort_key: {'$lt': date}},
+		if not older:
+			criteria = {sort_key: {'$gt': date}}
+		else:
+			criteria = {sort_key: {'$lt': date}}
+		
+		if tag:
+			criteria[Item.TAGS] = tag
+		
+		results = self.controllers[Database].db[Item.COLLECTION].find(
+			criteria,
 			limit=limit,
-			sort=[(sort_key, pymongo.DESCENDING)],
-		)))
+			sort=[(sort_key, 
+				pymongo.ASCENDING if not older else pymongo.DESCENDING)],
+		)
+		
+		if not older:
+			return results
+		else:
+			return reversed(list(results))
 	
 	def get_item_count(self):
 		return self.controllers[Database].db[Item.COLLECTION].count()
 
 
 class OverviewHandler(RequestHandler, ViewMixIn):
-	
 	@render_response
-	def get(self):
+	def get(self, tag=None):
 		limit = 100
 		count = self.get_item_count()
 		newer_date_str = self.get_argument('newer_date', None)
@@ -95,23 +109,25 @@ class OverviewHandler(RequestHandler, ViewMixIn):
 	
 		if newer_date:
 			date = newer_date
-			items = list(self.get_items_newer(date, limit + 1))
+			items = list(self.get_items_newer(date, limit + 1, tag=tag))
 			items = list(reversed(items))
 			has_newer = len(items) > limit
 			
 			if items:
-				items_opposite_dir = list(self.get_items_older(items[-1][Item.DATE], 1))
+				items_opposite_dir = list(self.get_items_older(
+					items[-1][Item.DATE], 1, tag=tag))
 				has_older = len(items_opposite_dir) != 0
 			else:
 				has_older = False
 		else:
 			date = older_date
-			items = list(self.get_items_older(date, limit + 1))
+			items = list(self.get_items_older(date, limit + 1, tag=tag))
 			items = list(reversed(items))
 			has_older = len(items) > limit
 			
 			if items:
-				items_opposite_dir = list(self.get_items_newer(items[0][Item.DATE], 1))
+				items_opposite_dir = list(self.get_items_newer(
+					items[0][Item.DATE], 1, tag=tag))
 				has_newer = len(items_opposite_dir) != 0
 			else:
 				has_newer = False
@@ -119,6 +135,7 @@ class OverviewHandler(RequestHandler, ViewMixIn):
 		return {
 			'_template': 'viewer/overview.html',
 			'items': items[:limit],
+			'tag': tag,
 			'paging': {
 				'date': str(date),
 				'limit': limit,

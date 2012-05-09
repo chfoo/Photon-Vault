@@ -55,7 +55,8 @@ class EditSingleHandler(RequestHandler):
 		obj_id = bson.objectid.ObjectId(str_id)
 		
 		date_obj = iso8601.parse_date(self.get_argument('date'))
-		tag_list = list(frozenset(self.get_argument('tags', '').splitlines()))
+		tag_list = list(sorted(list(
+			frozenset(self.get_argument('tags', '').splitlines()))))
 		
 		self.controllers[Database].db[Item.COLLECTION].update(
 			{'_id': obj_id},
