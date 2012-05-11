@@ -66,7 +66,7 @@ class Resource(Controller):
 			glob.glob(u'%s/*/*.%s' % (source_dir, file_extension))
 		
 		# Open as text so byte order marks are not accidentally included 
-		for filename in filenames:
+		for filename in sorted(filenames):
 			with open(filename, 'rt') as f_in:
 				shutil.copyfileobj(f_in, destination_file)
 			

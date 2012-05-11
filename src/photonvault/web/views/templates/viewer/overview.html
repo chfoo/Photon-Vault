@@ -10,10 +10,14 @@
 <h1 class="overview-tagHeader">{{ tag }}</h1>
 {% end %}
 
+{% if not items %}
+<p>(No items)</p>
+{% end %}
+
 <div class="overview-thumbnails">
 {% set _prev_year = None %}
 
-{% for item in items[:paging['limit']] %}
+{% for item in items %}
 	{% if item['date'].year != _prev_year %}
 		{% set _prev_year = item['date'].year %}
 		<h2 class="overview-yearDeliminator">{{ item['date'].year }}</h2>
@@ -29,12 +33,12 @@
 
 
 <p>
-{% if paging['has_newer'] %}
-	<a href="?newer_date={{ items[0]['date'] }}">{{ _('Newer') }}</a>
+{% if paging['has_more_newer'] %}
+	<a href="?newer_than={{ items[0]['_id'] }}">{{ _('Newer') }}</a>
 {% end %}
 
-{% if paging['has_older'] %}
-	<a href="?older_date={{ items[-1]['date'] }}">{{ _('Older') }}</a>
+{% if paging['has_more_older'] %}
+	<a href="?older_than={{ items[-1]['_id'] }}">{{ _('Older') }}</a>
 {% end %}
 </p>
 

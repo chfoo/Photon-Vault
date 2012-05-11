@@ -31,6 +31,7 @@ class Edit(Controller):
 		return [
 			URLSpec('/edit/(.+)', EditSingleHandler),
 			URLSpec('/manage', ManageHandler),
+			URLSpec('/manage/edit_date', EditDateHandler),
 		]
 
 
@@ -80,3 +81,10 @@ class ManageHandler(RequestHandler):
 		return {
 			'_template': 'edit/manage.html'
 		}
+		
+	
+class EditDateHandler(RequestHandler):
+	@render_response
+	def get(self):
+		pass
+	

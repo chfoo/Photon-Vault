@@ -1,0 +1,75 @@
+{% extends '../layout/layout.html' %}
+
+{% block layout_title %}
+{{ _('Selection') }}
+{% end %}
+
+{% block layout_content %}
+
+<h1>{{ _('Selection') }}</h1>
+<p>Action: {{ _(action_description) }}</p>
+<p>Value: {{ action_value }}</p>
+
+<form method="post" action="">
+
+<table>
+<tr>
+	<th>Sel.</th>
+	<th>Thumb.</th>
+	<th>Date</th>
+	<th>Title</th>
+	<th>Labels</th>
+</tr>
+
+{% for item in items %}
+<tr>
+	<td><input class="listCheckbox" type="checkbox" name="selection" 
+		value="{{ str(item['_id']) }}"/>
+	</td>
+	<td>
+		{% module Template('layout/widgets/thumbnail.html', 
+			image_src_url='/thumbnail/%s/50' % item['_id'], 
+			image_target_url='/item/%s' % item['_id'], 
+			image_title=item.get('title', '')) %}
+	</td>
+	<td>
+		{{ locale.format_date(item['date']) }}
+	</td>
+	<td>
+		{{ item['title'] }}
+	</td>
+	<td>
+		{% for tag in item.get('tags', []) %}
+		<a class="itemTag" href="/tag/{{ tag }}">{{ tag }}</a>
+		{% end %}
+	</td>
+</tr>
+{% end %}
+
+</table>
+
+<p>Action: {{ _(action_description) }}</p>
+<p>Value: {{ action_value }}</p>
+
+<input type="submit" value="{{ _('Apply') }}"/>
+
+</form>
+
+<p>
+(Navigation to other pages will discard your selections)
+
+{% if paging['has_newer'] %}
+	<a href="?newer_date={{ items[0]['date'] }}">{{ _('Newer') }}</a>
+{% end %}
+
+{% if paging['has_older'] %}
+	<a href="?older_date={{ items[-1]['date'] }}">{{ _('Older') }}</a>
+{% end %}
+</p>
+
+<script type="text/javascript">
+<!--
+$('.listCheckbox').enableCheckboxRangeSelection();
+//-->
+</script>
+{% end %}
