@@ -26,6 +26,7 @@ import bson.binary
 import cStringIO
 import datetime
 import httplib
+import photonvault.utils.exif
 import shutil
 import tempfile
 
@@ -111,11 +112,7 @@ class ThumbnailHandler(RequestHandler, StreamingFileMixIn):
 		# Quick hack for exif info
 		# http://stackoverflow.com/questions/765396/
 		
-		if not hasattr(pil_image, '_getexif'):
-			return pil_image
-		
-		exif_dict = pil_image._getexif()
-		orientation_value = exif_dict.get(0x0112)
+		orientation_value = photonvault.utils.exif.get_orientation(pil_image)
 		
 		if orientation_value in ThumbnailHandler.ORIENTATION_MAP:
 			pil_image = pil_image.transpose(

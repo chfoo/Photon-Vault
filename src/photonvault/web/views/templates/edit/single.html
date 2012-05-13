@@ -27,6 +27,26 @@
 		
 		<input type="datetime" name="date" value="{{ date }}"/>
 	</label>
+
+	{% if orientation %}
+	<label>
+		{{ _('Orientation: ') }}
+		<select name="orientation">
+			<option value="1" {% if orientation == 1 %} selected {% end %}>
+				Normal
+			</option>
+			<option value="8" {% if orientation == 8 %} selected {% end %}>
+				Left (Rotate counterclockwise 90°)
+			</option>
+			<option value="3" {% if orientation == 3 %} selected {% end %}>
+				Inverted (Rotate 180°)
+			</option>
+			<option value="6" {% if orientation == 6 %} selected {% end %}>
+				Right (Rotate clockwise 90°)
+			</option>
+		</select>
+	</label>
+	{% end %}
 	
 	<label>
 		{{ _('Tags: ') }}

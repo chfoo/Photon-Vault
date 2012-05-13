@@ -19,12 +19,17 @@
 from photonvault.web.controllers.database import Database
 from photonvault.web.controllers.mixins.items import ItemPaginationMixin
 from photonvault.web.controllers.session import Session
-from photonvault.web.models.collection import Item
+from photonvault.web.models.collection import Item, Thumbnail
 from photonvault.web.utils.render import render_response
 from tornado.web import Controller, URLSpec, RequestHandler, HTTPError
+import PIL.Image
 import bson.objectid
 import httplib
 import iso8601
+import photonvault.utils.exif
+import shutil
+import tempfile
+import pyexiv2.metadata
 
 __docformat__ = 'restructuredtext en'
 
@@ -41,13 +46,63 @@ class Edit(Controller):
 		]
 
 
-class EditSingleHandler(RequestHandler):
+class EXIFMixin(object):
+	def get_orientation(self, file_id, filter_include=(1, 3, 6, 8)):
+		file_obj = self.controllers[Database].fs.get(file_id)
+		pil_image = PIL.Image.open(file_obj) 
+		
+		value = photonvault.utils.exif.get_orientation(pil_image)
+		
+		if filter_include:
+			if value in filter_include:
+				return value
+		else:
+			return value
+	
+	def apply_exif(self, item_id, key_value_dict):
+		result = self.controllers[Database].db[Item.COLLECTION].find_one(
+			{'_id': item_id}
+		)
+		
+		file_id = result[Item.FILE_ID]
+		file_obj = self.controllers[Database].fs.get(file_id)
+		
+		temp_file_obj = tempfile.NamedTemporaryFile(delete=False)
+		shutil.copyfileobj(file_obj, temp_file_obj)
+		temp_file_obj.close()
+		
+		metadata = pyexiv2.metadata.ImageMetadata(temp_file_obj.name)
+		metadata.read()
+		
+		for k, v in key_value_dict.iteritems():
+			metadata[k] = v
+		
+		metadata.write()
+		
+		dest_file_obj = self.controllers[Database].fs.new_file()
+		dest_file_obj.filename = file_obj.filename
+		dest_file_obj.content_type = file_obj.content_type
+		
+		shutil.copyfileobj(open(temp_file_obj.name, 'rb'), dest_file_obj)
+		dest_file_obj.close()
+		
+		self.controllers[Database].db[Item.COLLECTION].update(
+			{'_id': item_id},
+			{'$set': {Item.FILE_ID: dest_file_obj._id}}
+		)
+		
+		self.controllers[Database].fs.delete(file_id)
+			
+
+class EditSingleHandler(RequestHandler, EXIFMixin):
 	@render_response
 	def get(self, str_id):
 		obj_id = bson.objectid.ObjectId(str_id)
 		result = self.controllers[Database].db[Item.COLLECTION].find_one(
 			{'_id': obj_id}
 		)
+		
+		orientation = self.get_orientation(result[Item.FILE_ID])
 		
 		return {
 			'_template': 'edit/single.html',
@@ -56,15 +111,24 @@ class EditSingleHandler(RequestHandler):
 			'date': str(result[Item.DATE]),
 			'tags': u'\r\n'.join(result.get(Item.TAGS, [])),
 			'id': str_id,
+			'orientation': orientation,
 		}
 	
 	@render_response
 	def post(self, str_id):
 		obj_id = bson.objectid.ObjectId(str_id)
-		
 		date_obj = iso8601.parse_date(self.get_argument('date'))
+		exif_dict = {'Exif.Image.Orientation': date_obj}
 		tag_list = list(sorted(list(
 			frozenset(self.get_argument('tags', '').splitlines()))))
+		
+		if self.get_argument('orientation', None):
+			exif_dict['Exif.Image.Orientation'] = int(self.get_argument('orientation'))
+			
+			# Invalidate thumbnail
+			self.controllers[Database].db[Thumbnail.COLLECTION].remove({'_id': obj_id})
+		
+		self.apply_exif(obj_id, exif_dict)
 		
 		self.controllers[Database].db[Item.COLLECTION].update(
 			{'_id': obj_id},
@@ -79,7 +143,7 @@ class EditSingleHandler(RequestHandler):
 		return {
 			'_redirect_url': '/item/%s' % obj_id
 		}
-
+	
 
 class SelectionMixin(object):
 	SELECTION_KEY = 'edit_list_selection'
