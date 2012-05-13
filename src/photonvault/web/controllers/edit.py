@@ -36,6 +36,8 @@ class Edit(Controller):
 			URLSpec('/manage/actions', ActionsHandler),
 			URLSpec('/manage/actions/([a-zA-Z_]+)', ActionsHandler),
 			URLSpec('/manage/list', ListHandler),
+			URLSpec('/manage/delete_tag', DeleteTagHandler),
+			URLSpec('/manage/rename_tag', RenameTagHandler),
 		]
 
 
@@ -150,12 +152,15 @@ class ActionsHandler(RequestHandler, SelectionMixin):
 		selected_id_list = list(sorted(list(all_selected_ids)))
 		first_few_ids = selected_id_list[:5]
 		last_few_ids = selected_id_list[max(5, len(selected_id_list) - 5):]
+		tags = self.controllers[Database].db[Item.COLLECTION].distinct(
+			Item.TAGS)
 		
 		return {
 			'_template': 'edit/manage.html',
 			'num_selected': len(all_selected_ids),
 			'first_few_ids': first_few_ids,
 			'last_few_ids': last_few_ids,
+			'tags': tags,
 		}
 	
 	def post(self, action):
@@ -193,3 +198,53 @@ class ActionsHandler(RequestHandler, SelectionMixin):
 			raise HTTPError(httplib.BAD_REQUEST)
 		
 		self.redirect('/manage/list', status=httplib.SEE_OTHER)
+
+
+class DeleteTagHandler(RequestHandler):
+	@render_response
+	def get(self):
+		tags = self.controllers[Database].db[Item.COLLECTION].distinct(
+			Item.TAGS)
+		return {
+			'_template': 'edit/delete_tag.html',
+			'tags': tags
+		}
+	
+	def post(self):
+		tag = self.get_argument('tag')
+		
+		self.controllers[Database].db[Item.COLLECTION].update(
+			{Item.TAGS: tag},
+			{'$pull': {Item.TAGS: tag}},
+			multi=True
+		)
+		
+		self.redirect('/all_tags', status=httplib.SEE_OTHER)
+	
+
+class RenameTagHandler(RequestHandler):
+	@render_response
+	def get(self):
+		tags = self.controllers[Database].db[Item.COLLECTION].distinct(
+			Item.TAGS)
+		return {
+			'_template': 'edit/rename_tag.html',
+			'tags': tags
+		}
+	
+	def post(self):
+		old_tag = self.get_argument('old_tag')
+		new_tag = self.get_argument('new_tag')
+		
+		self.controllers[Database].db[Item.COLLECTION].update(
+			{Item.TAGS: old_tag},
+			{'$addToSet': {Item.TAGS: new_tag}},
+			multi=True
+		)
+		self.controllers[Database].db[Item.COLLECTION].update(
+			{Item.TAGS: old_tag},
+			{'$pull': {Item.TAGS: old_tag}},
+			multi=True
+		)
+		
+		self.redirect('/all_tags', status=httplib.SEE_OTHER)

@@ -122,7 +122,7 @@ class FullViewHandler(RequestHandler, StreamingFileMixIn):
 class AllTagsHandler(RequestHandler):
 	@render_response
 	def get(self):
-		tags =  self.controllers[Database].db[Item.COLLECTION].distinct(
+		tags = self.controllers[Database].db[Item.COLLECTION].distinct(
 			Item.TAGS)
 		
 		return {

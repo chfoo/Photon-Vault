@@ -1,0 +1,32 @@
+{% extends '../layout/layout.html' %}
+
+{% block layout_title %}
+{{ _('Rename Label') }}
+{% end %}
+
+{% block layout_content %}
+
+<form method="post" action="">
+
+<label>
+	Rename:
+	<select name="old_tag">
+	
+	{% for tag in sorted(tags) %}
+		<option value="{{ tag }}">{{ tag }}</option>
+	{% end %}
+	
+</select>
+</label>
+
+<label>
+	New Label:
+	<input type="text" required name="new_tag" 
+		placeholder="Enter a new label name"/>
+</label>
+
+<input type="submit" value="{{ _('Rename') }}"/>
+
+</form>
+
+{% end %}

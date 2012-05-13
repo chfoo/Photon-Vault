@@ -1,0 +1,24 @@
+{% extends '../layout/layout.html' %}
+
+{% block layout_title %}
+{{ _('Delete Label') }}
+{% end %}
+
+{% block layout_content %}
+
+<form method="post" action="">
+
+Label:
+<select name="tag">
+
+{% for tag in sorted(tags) %}
+	<option value="{{ tag }}">{{ tag }}</option>
+{% end %}
+
+</select>
+
+<input type="submit" value="{{ _('Delete') }}"/>
+
+</form>
+
+{% end %}
