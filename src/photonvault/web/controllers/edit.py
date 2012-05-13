@@ -177,6 +177,18 @@ class ActionsHandler(RequestHandler, SelectionMixin):
 				{'$set': {Item.TITLE: self.get_argument('title')}},
 				multi=True,
 			)
+		elif action == 'add_tag':
+			item_collection.update(
+				{'_id': {'$in': obj_ids}}, 
+				{'$addToSet': {Item.TAGS: self.get_argument('tag')}},
+				multi=True,
+			)
+		elif action == 'remove_tag':
+			item_collection.update(
+				{'_id': {'$in': obj_ids}}, 
+				{'$pull': {Item.TAGS: self.get_argument('tag')}},
+				multi=True,
+			)
 		else:
 			raise HTTPError(httplib.BAD_REQUEST)
 		
