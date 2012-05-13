@@ -39,7 +39,7 @@
 	</td>
 	<td>
 		{% module Template('layout/widgets/thumbnail.html', 
-			image_src_url='/thumbnail/%s/50' % item['_id'], 
+			image_src_url='/thumbnail/%s/50?v=%s' % (item['_id'], item['file_id']), 
 			image_target_url='/item/%s' % item['_id'], 
 			image_title=item.get('title', '')) %}
 	</td>
