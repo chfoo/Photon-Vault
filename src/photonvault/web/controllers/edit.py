@@ -118,7 +118,7 @@ class EditSingleHandler(RequestHandler, EXIFMixin):
 	def post(self, str_id):
 		obj_id = bson.objectid.ObjectId(str_id)
 		date_obj = iso8601.parse_date(self.get_argument('date'))
-		exif_dict = {'Exif.Image.Orientation': date_obj}
+		exif_dict = {'Exif.Image.DateTime': date_obj}
 		tag_list = list(sorted(list(
 			frozenset(self.get_argument('tags', '').splitlines()))))
 		
@@ -209,7 +209,7 @@ class ListHandler(RequestHandler, ItemPaginationMixin, SelectionMixin):
 			self.redirect('/manage/actions', status=httplib.SEE_OTHER)
 
 
-class ActionsHandler(RequestHandler, SelectionMixin):
+class ActionsHandler(RequestHandler, SelectionMixin, EXIFMixin):
 	@render_response
 	def get(self):
 		all_selected_ids = self.get_selections()
@@ -240,6 +240,10 @@ class ActionsHandler(RequestHandler, SelectionMixin):
 				{'$set': {Item.DATE: date}},
 				multi=True,
 			)
+			
+			for obj_id in obj_ids:
+				self.apply_exif(obj_id, {'Exif.Image.DateTime': date})
+			
 		elif action == 'edit_title':
 			item_collection.update(
 				{'_id': {'$in': obj_ids}}, 
@@ -258,6 +262,14 @@ class ActionsHandler(RequestHandler, SelectionMixin):
 				{'$pull': {Item.TAGS: self.get_argument('tag')}},
 				multi=True,
 			)
+		elif action == 'set_orientation':
+			orientation = int(self.get_argument('orientation'))
+			
+			for obj_id in obj_ids:
+				self.apply_exif(obj_id, {'Exif.Image.Orientation': orientation})
+				# Invalidate thumbnail
+				self.controllers[Database].db[Thumbnail.COLLECTION].remove({'_id': obj_id})
+			
 		else:
 			raise HTTPError(httplib.BAD_REQUEST)
 		

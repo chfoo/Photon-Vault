@@ -9,7 +9,6 @@
 
 <p>{{ _('Number of items selected: ') }}{{ locale.friendly_number(num_selected) }}</p>
 
-
 <div class="overview-thumbnails">
 {% for id_str in first_few_ids + [None] + last_few_ids %}
 	{% if id_str is None and last_few_ids %}
@@ -23,6 +22,7 @@
 {% end %}
 </div>
 
+<p>Actions that can be applied to the selection:</p>
 
 <form method="post" action="/manage/actions/edit_date">
 	<label>
@@ -68,5 +68,33 @@
 	</label>
 	<input type="submit" value="Apply"/>
 </form>
+
+
+<br/>
+
+
+<form method="post" action="/manage/actions/set_orientation">
+	<label>
+		{{ _('Set orientation: ') }}
+		<select name="orientation">
+			<option value="1">
+				Normal
+			</option>
+			<option value="8">
+				Left (Rotate counterclockwise 90°)
+			</option>
+			<option value="3">
+				Inverted (Rotate 180°)
+			</option>
+			<option value="6">
+				Right (Rotate clockwise 90°)
+			</option>
+		</select>
+	</label>
+	<input type="submit" value="Apply"/>
+</form>
+
+
+
 
 {% end %}
