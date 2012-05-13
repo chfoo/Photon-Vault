@@ -18,4 +18,5 @@ Use Photon Vault to keep your photos organized on a single computer.'''
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
-__version__ = 'dev'
+__version__ = '1.0'
+__version_info__ = (1, 0,)
