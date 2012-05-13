@@ -41,6 +41,11 @@ class ThumbnailGenerator(Controller):
 
 class ThumbnailHandler(RequestHandler, StreamingFileMixIn):
 	SIZES = [50, 200, 500]
+	ORIENTATION_MAP = {
+		8: PIL.Image.ROTATE_90,
+		3: PIL.Image.ROTATE_180,
+		6: PIL.Image.ROTATE_270,
+	}
 	
 	def head(self, item_id_str, size):
 		self.get(item_id_str, size)
@@ -76,10 +81,12 @@ class ThumbnailHandler(RequestHandler, StreamingFileMixIn):
 	def new_thumbnail(self, item_id, size):
 		file_obj = self.get_file(item_id)
 		
-		with tempfile.TemporaryFile() as new_file:
+		with tempfile.SpooledTemporaryFile(max_size=4194304) as new_file:
 			image = PIL.Image.open(file_obj)
-			image.thumbnail([size, size], PIL.Image.ANTIALIAS)
-			image.save(new_file, image.format)
+			new_image = self.apply_orientation(image)
+			
+			new_image.thumbnail([size, size], PIL.Image.ANTIALIAS)
+			new_image.save(new_file, image.format)
 			new_file.seek(0)
 			
 			self.controllers[Database].db[Thumbnail.COLLECTION].update(
@@ -100,3 +107,18 @@ class ThumbnailHandler(RequestHandler, StreamingFileMixIn):
 		if result:
 			return result[Thumbnail.SIZES][size]
 	
+	def apply_orientation(self, pil_image):
+		# Quick hack for exif info
+		# http://stackoverflow.com/questions/765396/
+		
+		if not hasattr(pil_image, '_getexif'):
+			return pil_image
+		
+		exif_dict = pil_image._getexif()
+		orientation_value = exif_dict.get(0x0112)
+		
+		if orientation_value in ThumbnailHandler.ORIENTATION_MAP:
+			pil_image = pil_image.transpose(
+				ThumbnailHandler.ORIENTATION_MAP[orientation_value])
+		
+		return pil_image
