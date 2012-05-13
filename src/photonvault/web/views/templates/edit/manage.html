@@ -1,4 +1,5 @@
 {% extends '../layout/layout.html' %}
+{% import datetime.datetime %}
 
 {% block layout_title %}
 {{ _('Manage') }}
@@ -6,11 +7,63 @@
 
 {% block layout_content %}
 
-<ul>
-	<li><a href="/manage/edit_date">Edit Date</a></li>
-	<li><a href="/manage/edit_title">Edit Title</a></li>
-	<li><a href="/manage/add_tag">Add Label</a></li>
-	<li><a href="/manage/remove_tag">Remove Label</a></li>
-</ul>
+<p>{{ _('Number of items selected: ') }}{{ locale.friendly_number(num_selected) }}</p>
+
+
+<div class="overview-thumbnails">
+{% for id_str in first_few_ids + [None] + last_few_ids %}
+	{% if id_str is None and last_few_ids %}
+		…
+	{% elif id_str %}
+		{% module Template('layout/widgets/thumbnail.html', 
+			image_src_url='/thumbnail/%s/50' % id_str, 
+			image_target_url='/item/%s' % id_str, 
+			image_title='') %}
+	{% end %}
+{% end %}
+</div>
+
+
+<form method="post" action="/manage/actions/edit_date">
+	<label>
+		Edit date:
+		<input type="datetime" name="date" value="{{ datetime.datetime.utcnow() }}" 
+			required placeholder="Enter a ISO-8601 formatted date"/>
+	</label>
+	<input type="submit" value="Apply"/>
+</form>
+
+<br/>
+
+<form method="post" action="/manage/actions/edit_title">
+	<label>
+		Edit title:
+		<input type="text" name="title" 
+			required placeholder="Enter a title"/>
+	</label>
+	<input type="submit" value="Apply"/>
+</form>
+
+<br/>
+
+<form method="post" action="/manage/actions/add_tag">
+	<label>
+		Add a label:
+		<input type="text" name="tag" 
+			required placeholder="Enter new label"/>
+	</label>
+	<input type="submit" value="Apply"/>
+</form>
+
+<br/>
+
+<form method="post" action="/manage/actions/remove_tag">
+	<label>
+		Remove a label:
+		<input type="text" name="tag" 
+			required placeholder="Enter the label to be removed"/>
+	</label>
+	<input type="submit" value="Apply"/>
+</form>
 
 {% end %}

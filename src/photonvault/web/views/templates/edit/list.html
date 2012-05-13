@@ -1,16 +1,19 @@
 {% extends '../layout/layout.html' %}
 
 {% block layout_title %}
-{{ _('Selection') }}
+{{ _('Edit') }}
 {% end %}
 
 {% block layout_content %}
 
-<h1>{{ _('Selection') }}</h1>
-<p>Action: {{ _(action_description) }}</p>
-<p>Value: {{ action_value }}</p>
-
 <form method="post" action="">
+{% set selected_ids_set = frozenset(selected_ids) %}
+
+
+<p>
+	{{ _('Number of items selected: ') }}{{ locale.friendly_number(num_selected) }}
+	<input type="submit" name="command_clear_selections" value="{{ _('Clear Selections') }}"/>
+</p>
 
 <table>
 <tr>
@@ -21,10 +24,18 @@
 	<th>Labels</th>
 </tr>
 
+
 {% for item in items %}
 <tr>
-	<td><input class="listCheckbox" type="checkbox" name="selection" 
-		value="{{ str(item['_id']) }}"/>
+	<td>
+		<input type="hidden" name="current_ids" value="{{ str(item['_id']) }}"/>
+		<input class="listCheckbox" type="checkbox" name="selection" 
+		value="{{ str(item['_id']) }}"
+		
+		{% if str(item['_id']) in selected_ids_set %}
+		checked="checked"
+		{% end %}
+		/>
 	</td>
 	<td>
 		{% module Template('layout/widgets/thumbnail.html', 
@@ -48,24 +59,23 @@
 
 </table>
 
-<p>Action: {{ _(action_description) }}</p>
-<p>Value: {{ action_value }}</p>
+<p>
 
-<input type="submit" value="{{ _('Apply') }}"/>
+<input type="submit" name="command_continue" value="{{ _('Continue') }}"/>
+
+{% if paging['has_more_newer'] %}
+	<input type="hidden" name="newer_id" value="{{ items[0]['_id'] }}"/>
+	<input type="submit" name="command_newer" value="{{ _('Newer') }}"/>
+{% end %}
+
+{% if paging['has_more_older'] %}
+	<input type="hidden" name="older_id" value="{{ items[-1]['_id'] }}"/>
+	<input type="submit" name="command_older" value="{{ _('Older') }}"/>
+{% end %}
+</p>
 
 </form>
 
-<p>
-(Navigation to other pages will discard your selections)
-
-{% if paging['has_newer'] %}
-	<a href="?newer_date={{ items[0]['date'] }}">{{ _('Newer') }}</a>
-{% end %}
-
-{% if paging['has_older'] %}
-	<a href="?older_date={{ items[-1]['date'] }}">{{ _('Older') }}</a>
-{% end %}
-</p>
 
 <script type="text/javascript">
 <!--

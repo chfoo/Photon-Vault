@@ -21,6 +21,7 @@ from photonvault.web.controllers.database import Database
 from photonvault.web.controllers.edit import Edit
 from photonvault.web.controllers.processor import Processor
 from photonvault.web.controllers.resource import Resource
+from photonvault.web.controllers.session import Session
 from photonvault.web.controllers.thumbnail import ThumbnailGenerator
 from photonvault.web.controllers.viewer import Viewer
 import ConfigParser
@@ -41,9 +42,11 @@ class Application(tornado.web.Application):
 				Processor,
 				ThumbnailGenerator,
 				Edit,
+				Session,
 			],
 			template_path=self._get_template_path(),
 			max_streaming_upload_size=2147483648,
+			cookie_secret=self.config_parser.get('application', 'cookie_secret'),
 		)
 	
 	def _get_template_path(self):
