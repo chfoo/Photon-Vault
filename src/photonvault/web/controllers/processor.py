@@ -202,10 +202,18 @@ class QueueProcessor(multiprocessing.Process):
 		metadata = pyexiv2.ImageMetadata(path)
 		metadata.read()
 		
-		if 'Exif.Image.DateTime' in metadata: 
-			tag = metadata['Exif.Image.DateTime']
+		# We need the date of the content of the photo, not the date
+		# when that photo was digitized
+		if 'Xmp.photoshop.DateCreated' in metadata.xmp_keys:
+			tag = metadata['Xmp.photoshop.DateCreated']
 			
 			return tag.value
+		
+		if 'Exif.Photo.DateTimeOriginal' in metadata.exif_keys:
+			tag = metadata['Exif.Photo.DateTimeOriginal']
+			
+			return tag.value
+		
 
 
 class QueueViewHandler(RequestHandler):

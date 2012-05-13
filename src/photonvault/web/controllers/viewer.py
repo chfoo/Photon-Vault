@@ -26,7 +26,11 @@ import bson.objectid
 import datetime
 import httplib
 import iso8601
+import os
+import pyexiv2.metadata
 import pymongo
+import shutil
+import tempfile
 
 __docformat__ = 'restructuredtext en'
 
@@ -37,6 +41,7 @@ class Viewer(Controller):
 			URLSpec('/', OverviewHandler),
 			URLSpec('/tag/(.+)', OverviewHandler),
 			URLSpec('/item/(.+)', SingleViewHandler),
+			URLSpec('/detail/(.+)', DetailHandler),
 			URLSpec('/full/(.+)', FullViewHandler),
 			URLSpec('/all_tags', AllTagsHandler),
 		]
@@ -130,3 +135,37 @@ class AllTagsHandler(RequestHandler):
 			'tags': tags,
 		}
 
+class DetailHandler(RequestHandler):
+	@render_response
+	def get(self, str_id):
+		obj_id = bson.objectid.ObjectId(str_id)
+		
+		result = self.controllers[Database].db[Item.COLLECTION].find_one(
+			{'_id': obj_id})
+		
+		file_obj = self.controllers[Database].fs.get(result[Item.FILE_ID])
+		temp_file = tempfile.NamedTemporaryFile(delete=False)
+		
+		shutil.copyfileobj(file_obj, temp_file)
+		temp_file.close()
+		
+		metadata = pyexiv2.metadata.ImageMetadata(temp_file.name)
+		metadata.read()
+		
+		details = []
+		
+		for k in sorted(metadata.exif_keys + metadata.iptc_keys + metadata.xmp_keys):
+			try:
+				v = unicode(metadata[k].value)
+			except Exception, e:
+				v = unicode(e)
+				
+			details.append([k, v])
+		
+		os.remove(temp_file.name)
+		
+		return {
+			'_template': 'viewer/detail.html',
+			'details': details,
+			'item': result,
+		}

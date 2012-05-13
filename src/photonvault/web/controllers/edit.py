@@ -26,10 +26,11 @@ import PIL.Image
 import bson.objectid
 import httplib
 import iso8601
+import os
 import photonvault.utils.exif
+import pyexiv2.metadata
 import shutil
 import tempfile
-import pyexiv2.metadata
 
 __docformat__ = 'restructuredtext en'
 
@@ -51,7 +52,7 @@ class EXIFMixin(object):
 		file_obj = self.controllers[Database].fs.get(file_id)
 		pil_image = PIL.Image.open(file_obj) 
 		
-		value = photonvault.utils.exif.get_orientation(pil_image)
+		value = photonvault.utils.exif.get_orientation_quick(pil_image)
 		
 		if filter_include:
 			if value in filter_include:
@@ -92,7 +93,7 @@ class EXIFMixin(object):
 		)
 		
 		self.controllers[Database].fs.delete(file_id)
-			
+		os.remove(temp_file_obj.name)
 
 class EditSingleHandler(RequestHandler, EXIFMixin):
 	@render_response
@@ -118,12 +119,16 @@ class EditSingleHandler(RequestHandler, EXIFMixin):
 	def post(self, str_id):
 		obj_id = bson.objectid.ObjectId(str_id)
 		date_obj = iso8601.parse_date(self.get_argument('date'))
-		exif_dict = {'Exif.Image.DateTime': date_obj}
+		exif_dict = {
+			'Exif.Photo.DateTimeOriginal': date_obj,
+			'Xmp.photoshop.DateCreated': date_obj,
+		}
 		tag_list = list(sorted(list(
 			frozenset(self.get_argument('tags', '').splitlines()))))
 		
 		if self.get_argument('orientation', None):
 			exif_dict['Exif.Image.Orientation'] = int(self.get_argument('orientation'))
+			exif_dict['Xmp.tiff.Orientation'] = int(self.get_argument('orientation'))
 			
 			# Invalidate thumbnail
 			self.controllers[Database].db[Thumbnail.COLLECTION].remove({'_id': obj_id})
@@ -242,7 +247,10 @@ class ActionsHandler(RequestHandler, SelectionMixin, EXIFMixin):
 			)
 			
 			for obj_id in obj_ids:
-				self.apply_exif(obj_id, {'Exif.Image.DateTime': date})
+				self.apply_exif(obj_id, {
+					'Exif.Photo.DateTimeOriginal': date,
+					'Xmp.photoshop.DateCreated': date,
+				})
 			
 		elif action == 'edit_title':
 			item_collection.update(
@@ -266,7 +274,10 @@ class ActionsHandler(RequestHandler, SelectionMixin, EXIFMixin):
 			orientation = int(self.get_argument('orientation'))
 			
 			for obj_id in obj_ids:
-				self.apply_exif(obj_id, {'Exif.Image.Orientation': orientation})
+				self.apply_exif(obj_id, {
+					'Exif.Image.Orientation': orientation,
+					'Xmp.tiff.Orientation': orientation,
+				})
 				# Invalidate thumbnail
 				self.controllers[Database].db[Thumbnail.COLLECTION].remove({'_id': obj_id})
 			

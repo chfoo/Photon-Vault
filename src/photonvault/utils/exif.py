@@ -17,10 +17,9 @@
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 __docformat__ = 'restructuredtext en'
 
-def get_orientation(pil_image):
+def get_orientation_quick(pil_image):
 	if not hasattr(pil_image, '_getexif'):
 		return
 	

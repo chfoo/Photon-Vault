@@ -1,0 +1,31 @@
+{% extends '../layout/layout.html' %}
+
+{% block layout_title %}
+Detail
+{% end %}
+
+{% block layout_content %}
+
+<h1>{{ item['title'] }}</h1>
+
+<img src="/thumbnail/{{ str(item['_id']) }}/50"/>
+
+<table>
+<tr>
+	<th>Key</th>
+	<th>Value</th>
+</tr>
+
+{% for k, v in details %}
+
+<tr>
+	<td>{{ k }}</td>
+	<td>{{ v }}</td>
+</tr>
+
+{% end %}
+
+</table>
+
+
+{% end %}

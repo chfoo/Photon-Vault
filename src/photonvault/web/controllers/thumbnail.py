@@ -112,7 +112,7 @@ class ThumbnailHandler(RequestHandler, StreamingFileMixIn):
 		# Quick hack for exif info
 		# http://stackoverflow.com/questions/765396/
 		
-		orientation_value = photonvault.utils.exif.get_orientation(pil_image)
+		orientation_value = photonvault.utils.exif.get_orientation_quick(pil_image)
 		
 		if orientation_value in ThumbnailHandler.ORIENTATION_MAP:
 			pil_image = pil_image.transpose(
