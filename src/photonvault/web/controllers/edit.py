@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
+from photonvault.web.controllers.base.handler import BaseHandler
 from photonvault.web.controllers.database import Database
 from photonvault.web.controllers.mixins.items import ItemPaginationMixin
 from photonvault.web.controllers.session import Session
 from photonvault.web.models.collection import Item, Thumbnail
 from photonvault.web.utils.render import render_response
-from tornado.web import Controller, URLSpec, RequestHandler, HTTPError
+from tornado.web import Controller, URLSpec, HTTPError
 import PIL.Image
 import bson.objectid
 import httplib
@@ -95,7 +96,7 @@ class EXIFMixin(object):
 		self.controllers[Database].fs.delete(file_id)
 		os.remove(temp_file_obj.name)
 
-class EditSingleHandler(RequestHandler, EXIFMixin):
+class EditSingleHandler(BaseHandler, EXIFMixin):
 	@render_response
 	def get(self, str_id):
 		obj_id = bson.objectid.ObjectId(str_id)
@@ -166,7 +167,7 @@ class SelectionMixin(object):
 			session.pop(SelectionMixin.SELECTION_KEY, None)
 
 
-class ListHandler(RequestHandler, ItemPaginationMixin, SelectionMixin):
+class ListHandler(BaseHandler, ItemPaginationMixin, SelectionMixin):
 	@render_response
 	def get(self):
 		limit = 100
@@ -214,7 +215,7 @@ class ListHandler(RequestHandler, ItemPaginationMixin, SelectionMixin):
 			self.redirect('/manage/actions', status=httplib.SEE_OTHER)
 
 
-class ActionsHandler(RequestHandler, SelectionMixin, EXIFMixin):
+class ActionsHandler(BaseHandler, SelectionMixin, EXIFMixin):
 	@render_response
 	def get(self):
 		all_selected_ids = self.get_selections()
@@ -287,7 +288,7 @@ class ActionsHandler(RequestHandler, SelectionMixin, EXIFMixin):
 		self.redirect('/manage/list', status=httplib.SEE_OTHER)
 
 
-class DeleteTagHandler(RequestHandler):
+class DeleteTagHandler(BaseHandler):
 	@render_response
 	def get(self):
 		tags = self.controllers[Database].db[Item.COLLECTION].distinct(
@@ -309,7 +310,7 @@ class DeleteTagHandler(RequestHandler):
 		self.redirect('/all_tags', status=httplib.SEE_OTHER)
 	
 
-class RenameTagHandler(RequestHandler):
+class RenameTagHandler(BaseHandler):
 	@render_response
 	def get(self):
 		tags = self.controllers[Database].db[Item.COLLECTION].distinct(

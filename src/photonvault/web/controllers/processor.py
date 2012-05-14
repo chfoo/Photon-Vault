@@ -16,23 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
+from photonvault.web.controllers.base.handler import BaseHandler
 from photonvault.web.controllers.database import Database
 from photonvault.web.models.collection import UploadQueue, Item
 from photonvault.web.utils.render import render_response
-from tornado.web import Controller, RequestHandler, URLSpec, FileUploadHandler
+from tornado.web import Controller, URLSpec, FileUploadHandler
 import PIL.Image
 import datetime
+import gridfs
 import logging
 import multiprocessing
 import os.path
 import pyexiv2
+import pymongo
 import shutil
 import tarfile
 import tempfile
 import time
 import zipfile
-import pymongo
-import gridfs
 
 __docformat__ = 'restructuredtext en'
 
@@ -216,7 +217,7 @@ class QueueProcessor(multiprocessing.Process):
 		
 
 
-class QueueViewHandler(RequestHandler):
+class QueueViewHandler(BaseHandler):
 	@render_response
 	def get(self):
 		l = []

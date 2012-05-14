@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
+from photonvault.web.controllers.base.handler import BaseHandler
 from photonvault.web.controllers.database import Database
 from photonvault.web.controllers.mixins.items import ItemPaginationMixin
 from photonvault.web.models.collection import Item
 from photonvault.web.utils.render import render_response
-from tornado.web import Controller, RequestHandler, URLSpec, HTTPError, \
-	StreamingFileMixIn
+from tornado.web import Controller, URLSpec, HTTPError, StreamingFileMixIn
 import bson.objectid
 import datetime
 import httplib
@@ -53,7 +53,7 @@ class Viewer(Controller):
 			Item.COLLECTION].ensure_index(Item.TAGS)
 		
 
-class OverviewHandler(RequestHandler, ItemPaginationMixin):
+class OverviewHandler(BaseHandler, ItemPaginationMixin):
 	@render_response
 	def get(self, tag=None):
 		limit = 100
@@ -73,7 +73,7 @@ class OverviewHandler(RequestHandler, ItemPaginationMixin):
 		}
 
 
-class SingleViewHandler(RequestHandler, ItemPaginationMixin):
+class SingleViewHandler(BaseHandler, ItemPaginationMixin):
 	@render_response
 	def get(self, str_id):
 		obj_id = bson.objectid.ObjectId(str_id)
@@ -102,7 +102,7 @@ class SingleViewHandler(RequestHandler, ItemPaginationMixin):
 			raise HTTPError(httplib.NOT_FOUND)
 
 
-class FullViewHandler(RequestHandler, StreamingFileMixIn):
+class FullViewHandler(BaseHandler, StreamingFileMixIn):
 	def head(self, str_id):
 		self.get(str_id)
 	
@@ -124,7 +124,7 @@ class FullViewHandler(RequestHandler, StreamingFileMixIn):
 		raise HTTPError(httplib.NOT_FOUND)
 
 
-class AllTagsHandler(RequestHandler):
+class AllTagsHandler(BaseHandler):
 	@render_response
 	def get(self):
 		tags = self.controllers[Database].db[Item.COLLECTION].distinct(
@@ -135,7 +135,7 @@ class AllTagsHandler(RequestHandler):
 			'tags': tags,
 		}
 
-class DetailHandler(RequestHandler):
+class DetailHandler(BaseHandler):
 	@render_response
 	def get(self, str_id):
 		obj_id = bson.objectid.ObjectId(str_id)

@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
+from photonvault.web.controllers.base.handler import BaseHandler
 from photonvault.web.controllers.database import Database
 from photonvault.web.models.collection import Item, Thumbnail
-from tornado.web import Controller, RequestHandler, URLSpec, StreamingFileMixIn, \
-	HTTPError
+from tornado.web import Controller, URLSpec, StreamingFileMixIn, HTTPError
 import PIL.Image
 import bson
 import bson.binary
@@ -40,7 +40,7 @@ class ThumbnailGenerator(Controller):
 		]
 	
 
-class ThumbnailHandler(RequestHandler, StreamingFileMixIn):
+class ThumbnailHandler(BaseHandler, StreamingFileMixIn):
 	SIZES = [50, 200, 500]
 	ORIENTATION_MAP = {
 		8: PIL.Image.ROTATE_90,
