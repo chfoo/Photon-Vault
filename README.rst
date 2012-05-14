@@ -50,6 +50,9 @@ Then, open your web browser and go to http://localhost:8000. You can now upload,
 News
 ====
 
+The official project page is http://launchpad.net/photonvault. A courtesy GitHub project is located at https://github.com/chfoo/Photon-Vault. (Best of both worlds ☺)
+
+
 Bugs
 ++++
 
