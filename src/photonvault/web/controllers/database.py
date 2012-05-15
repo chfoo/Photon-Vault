@@ -17,11 +17,49 @@
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
 from tornado.web import RequestHandler, URLSpec
+import Queue
 import gridfs
+import logging
 import pymongo.connection
+import threading
+import time
 import tornado.web
 
 __docformat__ = 'restructuredtext en'
+
+
+_logger = logging.getLogger(__name__)
+
+class DatabaseDeferredExecutor(threading.Thread):
+	def __init__(self, controller):
+		threading.Thread.__init__(self)
+		self.daemon = True
+		self.name = 'DatabaseDeferredExecutor'
+		self.controller = controller
+		
+	def run(self):
+		while True:
+			f = self.controller.queue.get(block=True, timeout=None)
+			
+			sleep_time = 1
+			
+			while True:
+				try:
+					db = self.controller.db
+				except pymongo.errors.AutoReconnect:
+					db = None
+				
+				if db:
+					_logger.debug('Executing database task %s', f)
+					f()
+					break
+				
+				_logger.debug('Database will sleep %s s before task %s', 
+					sleep_time, f)
+				time.sleep(sleep_time)
+				sleep_time *= 2
+				sleep_time = min(3600, sleep_time)
+
 
 class Database(tornado.web.Controller):
 	def get_handlers(self):
@@ -56,12 +94,17 @@ class Database(tornado.web.Controller):
 		return name
 	
 	def init(self):
-		host, port = Database.get_host_and_port(self.application.config_parser)
-		
-		self.connection = pymongo.connection.Connection(host, port)
+		self.queue = Queue.Queue()
+		self.host, self.port = Database.get_host_and_port(self.application.config_parser)
+		self.connection = None
+		self.deferred_executor = DatabaseDeferredExecutor(self)
+		self.deferred_executor.start()
 	
 	@property
 	def db(self):
+		if not self.connection:
+			self.connection = pymongo.connection.Connection(self.host, self.port)
+		
 		name = Database.get_database_name(self.application.config_parser)
 		
 		return self.connection[name]
@@ -69,6 +112,9 @@ class Database(tornado.web.Controller):
 	@property
 	def fs(self):
 		return gridfs.GridFS(self.db)
+	
+	def execute_when_ready(self, func):
+		self.queue.put(func)
 
 
 class DropHandler(RequestHandler):

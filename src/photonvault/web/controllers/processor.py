@@ -76,10 +76,6 @@ class QueueProcessor(multiprocessing.Process):
 		# for Windows debugging:
 		# logging.basicConfig(filename="photonvaultlog.txt", level=logging.DEBUG)
 		
-		self.connection = pymongo.connection.Connection(self.host, self.port)
-		self.db = self.connection[self.database_name]
-		self.fs = gridfs.GridFS(self.db)
-		
 		while True:
 			self.logger.debug('Processor sleeping')
 			
@@ -88,6 +84,21 @@ class QueueProcessor(multiprocessing.Process):
 			self.queue_processor_event.clear()
 			
 			self.logger.debug('Processor woken')
+			
+			sleep_time = 1
+			while True:
+				try:
+					self.connection = pymongo.connection.Connection(self.host, self.port)
+					break
+				except pymongo.errors.AutoReconnect:
+					self.logger.debug('Processor failed to get connection, sleep %s s', 
+						sleep_time)
+					time.sleep(sleep_time)
+					sleep_time *= 2
+					sleep_time = min(3600, sleep_time)
+				
+			self.db = self.connection[self.database_name]
+			self.fs = gridfs.GridFS(self.db)
 			
 			# Database may not be finished committing, wait a bit
 			time.sleep(2)

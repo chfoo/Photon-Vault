@@ -120,5 +120,9 @@ class Session(Controller):
 		date = datetime.datetime.fromtimestamp(
 			time.time() - 3600 * Session.MAX_AGE_DAYS)
 		
-		self.application.controllers[Database].db[SessionModel.COLLECTION
-			].remove({SessionModel.COOKIE_DATE: {'$lt': date}})
+		def f():
+			self.application.controllers[Database].db[SessionModel.COLLECTION
+				].remove({SessionModel.COOKIE_DATE: {'$lt': date}})
+		
+		self.application.controllers[Database].execute_when_ready(f)
+		

@@ -48,11 +48,13 @@ class Viewer(Controller):
 		]
 	
 	def init(self):
-		self.application.controllers[Database].db[
-			Item.COLLECTION].ensure_index(Item.DATE)
-		self.application.controllers[Database].db[
-			Item.COLLECTION].ensure_index(Item.TAGS)
+		def ensure_index():
+			self.application.controllers[Database].db[
+				Item.COLLECTION].ensure_index(Item.DATE)
+			self.application.controllers[Database].db[
+				Item.COLLECTION].ensure_index(Item.TAGS)
 		
+		self.application.controllers[Database].execute_when_ready(ensure_index)
 
 class OverviewHandler(BaseHandler, ItemPaginationMixin):
 	@render_response
