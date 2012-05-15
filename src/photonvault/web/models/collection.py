@@ -24,6 +24,7 @@ class Item(object):
 	TAGS = 'tags'
 	DATE = 'date'
 	FILE_ID = 'file_id'
+	FINGERPRINT = 'fingerprint'
 
 
 class UploadQueue(object):

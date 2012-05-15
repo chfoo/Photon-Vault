@@ -62,12 +62,16 @@ Bugs
 Todo
 ++++
 
-Features that will be implemented:
-
- * Detecting duplicates
 
 Changelog
 +++++++++
+
+Version 1.2
+-----------
+
+ * Duplicates will be detected by date and filename during processing. This occurs for new files that are uploaded. 
+   * Fingerprints are the first 4 bytes of a MD5 hash of {the lowercased filename and the ISO8601 date} concatenated with the last two bytes of the lowercased filename without an extension. This method is suited for JPEG files named like IMAGE_123456.jpg. Using truncated hashes of filenames and dates allows the fingerprint to be short and fast to compute which should be sufficient for home usage.
+ * Will not crash on start up if the database isn't ready yet
 
 Version 1.1
 -----------

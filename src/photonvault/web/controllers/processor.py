@@ -22,11 +22,15 @@ from photonvault.web.models.collection import UploadQueue, Item
 from photonvault.web.utils.render import render_response
 from tornado.web import Controller, URLSpec, FileUploadHandler
 import PIL.Image
+import base64
+import bson.binary
 import datetime
 import gridfs
+import hashlib
 import logging
 import multiprocessing
 import os.path
+import posixpath
 import pyexiv2
 import pymongo
 import shutil
@@ -85,48 +89,53 @@ class QueueProcessor(multiprocessing.Process):
 			
 			self.logger.debug('Processor woken')
 			
-			sleep_time = 1
-			while True:
-				try:
-					self.connection = pymongo.connection.Connection(self.host, self.port)
-					break
-				except pymongo.errors.AutoReconnect:
-					self.logger.debug('Processor failed to get connection, sleep %s s', 
-						sleep_time)
-					time.sleep(sleep_time)
-					sleep_time *= 2
-					sleep_time = min(3600, sleep_time)
-				
-			self.db = self.connection[self.database_name]
-			self.fs = gridfs.GridFS(self.db)
+			self.get_db_connection()
 			
 			# Database may not be finished committing, wait a bit
 			time.sleep(2)
 			
 			while self.db[UploadQueue.COLLECTION].count():
-				# TODO: This logic assumes only 1 processor. Make this support
-				# many processors
-				result = self.db[UploadQueue.COLLECTION].find_one()
-				
-				if not result:
-					continue
-				
-				file_id = result[UploadQueue.FILE_ID]
-				file_obj = self.fs.get(file_id)
-				original_filename = file_obj.filename
-				temp_file = tempfile.NamedTemporaryFile(delete=False)
+				self.process_queue_item()
+	
+	def get_db_connection(self):
+		sleep_time = 1
+		while True:
+			try:
+				self.connection = pymongo.connection.Connection(self.host, self.port)
+				break
+			except pymongo.errors.AutoReconnect:
+				self.logger.debug('Processor failed to get connection, sleep %s s', 
+					sleep_time)
+				time.sleep(sleep_time)
+				sleep_time *= 2
+				sleep_time = min(3600, sleep_time)
 			
-				shutil.copyfileobj(file_obj, temp_file)
-				temp_file.close()
-				
-				if not self.attempt_read_tar_file(temp_file.name):
-					if not self.attempt_read_zip_file(temp_file.name):
-						self.insert_image(temp_file.name, original_filename)
-				
-				os.remove(temp_file.name)
-				self.db[UploadQueue.COLLECTION].remove({'_id': result['_id']})
-				self.fs.delete(result[UploadQueue.FILE_ID])
-			
+		self.db = self.connection[self.database_name]
+		self.fs = gridfs.GridFS(self.db)
+	
+	def process_queue_item(self):
+		# TODO: This logic assumes only 1 processor. Make this support
+		# many processors
+		result = self.db[UploadQueue.COLLECTION].find_one()
+		
+		if not result:
+			return
+		
+		file_id = result[UploadQueue.FILE_ID]
+		file_obj = self.fs.get(file_id)
+		original_filename = file_obj.filename
+		temp_file = tempfile.NamedTemporaryFile(delete=False)
+	
+		shutil.copyfileobj(file_obj, temp_file)
+		temp_file.close()
+		
+		if not self.attempt_read_tar_file(temp_file.name):
+			if not self.attempt_read_zip_file(temp_file.name):
+				self.insert_image(temp_file.name, original_filename)
+		
+		os.remove(temp_file.name)
+		self.db[UploadQueue.COLLECTION].remove({'_id': result['_id']})
+		self.fs.delete(result[UploadQueue.FILE_ID])
 	
 	def attempt_read_tar_file(self, path):
 		self.logger.debug('Attempt to read tar file')
@@ -177,6 +186,15 @@ class QueueProcessor(multiprocessing.Process):
 		self.logger.debug('Attempt insert image with name %s', filename)
 
 		if self.is_readable_image(path):
+			fingerprint = self.compute_fingerprint(path, filename)
+			fingerprint_bin_obj = bson.binary.Binary(fingerprint)
+			date = self.extract_date(path) or datetime.datetime.utcnow()
+			
+			self.logger.debug('Got fingerprint %s', base64.b16encode(fingerprint))
+			if self.is_duplicate(fingerprint_bin_obj, date):
+				self.logger.debug('Image is duplicate, skipping')
+				return
+			
 			db_file = self.fs.new_file(filename=filename)
 			
 			with open(path, 'rb') as file_obj:
@@ -185,13 +203,11 @@ class QueueProcessor(multiprocessing.Process):
 			db_file.close()
 			
 			file_id = db_file._id
-			
-			date = self.extract_date(path) or datetime.datetime.utcnow()
-			
 			self.db[Item.COLLECTION].insert({
 				Item.FILE_ID: file_id,
 				Item.TITLE: filename,
 				Item.DATE: date,
+				Item.FINGERPRINT: fingerprint_bin_obj,
 			})
 			
 			self.logger.debug('Inserted image, file id=%s', file_id)
@@ -225,8 +241,22 @@ class QueueProcessor(multiprocessing.Process):
 			tag = metadata['Exif.Photo.DateTimeOriginal']
 			
 			return tag.value
+	
+	def compute_fingerprint(self, path, filename):
+		normalized_filename = posixpath.basename(filename).lower()
+		date_bytes = str(self.extract_date(path)).encode('utf8')
+		filename_root, filename_ext = posixpath.splitext(normalized_filename) #@UnusedVariable
 		
-
+		return hashlib.md5(normalized_filename.encode('utf8') + 
+			date_bytes).digest()[:4] + filename_root[-2:].encode('utf8')
+	
+	def is_duplicate(self, fingerprint_bin, date):
+		result = self.db[Item.COLLECTION].find_one({
+			Item.FINGERPRINT: fingerprint_bin,
+			Item.DATE: date,
+		})
+		
+		return result
 
 class QueueViewHandler(BaseHandler):
 	@render_response
