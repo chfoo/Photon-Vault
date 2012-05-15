@@ -95,6 +95,17 @@
 </form>
 
 
+<br/>
 
+
+<form method="post" action="/manage/actions/delete" class="form">
+	{{ _('Delete items: ') }}
+	<label>
+		<input type="checkbox" name="delete" value="delete"/>
+		
+		{{ _('Yes, delete these items permanently') }}
+	</label>
+	<input type="submit" value="Delete"/>
+</form>
 
 {% end %}

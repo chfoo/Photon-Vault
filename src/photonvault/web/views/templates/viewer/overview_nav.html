@@ -16,4 +16,9 @@
 {% if paging['has_more_older'] %}
 	<a href="?older_than={{ items[-1]['_id'] }}">{{ _('Older') }}</a>
 {% end %}
+
+|
+
+{{ _('%s item(s)' % locale.friendly_number(paging['count'])) }}
+
 </div>

@@ -295,7 +295,13 @@ class ActionsHandler(BaseHandler, SelectionMixin, EXIFMixin):
 				})
 				# Invalidate thumbnail
 				self.controllers[Database].db[Thumbnail.COLLECTION].remove({'_id': obj_id})
-			
+		elif action == 'delete' and self.get_argument('delete', None) == 'delete':
+			for obj_id in obj_ids:
+				item = item_collection.find_one({'_id': obj_id})
+				self.controllers[Database].fs.delete(item[Item.FILE_ID])
+				item_collection.remove({'_id': obj_id})
+		
+			self.clear_selections()
 		else:
 			raise HTTPError(httplib.BAD_REQUEST)
 		
