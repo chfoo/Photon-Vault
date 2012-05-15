@@ -57,20 +57,23 @@ The official project page is http://launchpad.net/photonvault. A courtesy GitHub
 Bugs
 ++++
 
-Important issues:
-
- * Uploading tar+gz and tar+bzip may not work. This issue will be investigated.
+ * A label with "None" may be visible if there are no real tags
 
 Todo
 ++++
 
 Features that will be implemented:
 
- * Delete uploaded photos
- * Prevent uploading duplicates
+ * Detecting duplicates
 
 Changelog
 +++++++++
+
+Version 1.1
+-----------
+
+ * Support deleting photos through Manage
+ * Improved navigation
 
 Version 1.0
 -----------

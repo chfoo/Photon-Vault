@@ -121,9 +121,9 @@ class QueueProcessor(multiprocessing.Process):
 		self.logger.debug('Attempt to read tar file')
 		
 		try:
-			tar_file = tarfile.TarFile(path, mode='r')
+			tar_file = tarfile.open(path, mode='r')
 		except tarfile.ReadError:
-			self.logger.debug('Could not read tar file')
+			self.logger.exception('Could not read tar file')
 			return
 		
 		for member in tar_file.getmembers():
@@ -146,7 +146,7 @@ class QueueProcessor(multiprocessing.Process):
 		try:
 			zip_file = zipfile.ZipFile(path, mode='r')
 		except zipfile.BadZipfile:
-			self.logger.debug('Could not read zip file')
+			self.logger.exception('Could not read zip file')
 			return
 		
 		for info in zip_file.infolist():
