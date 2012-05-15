@@ -136,3 +136,12 @@ class ItemPaginationMixin(object):
 	
 	def get_item_count(self):
 		return self.controllers[Database].db[Item.COLLECTION].count()
+	
+	def get_earliest_year(self):
+		result = self.controllers[Database].db[Item.COLLECTION].find_one(
+			sort=[(Item.DATE, pymongo.ASCENDING), ('_id', pymongo.ASCENDING)],
+			fields=[Item.DATE],
+		)
+		
+		if result:
+			return result[Item.DATE].year

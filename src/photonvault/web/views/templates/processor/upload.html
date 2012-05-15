@@ -6,7 +6,7 @@
 
 {% block layout_content %}
 
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" class="form">
 	{% raw xsrf_form_html() %}
 	
 	<p>{{ _('Upload a single file or an archive of files. zip, tar+gzip and tar+bzip files are supported.') }}</p>

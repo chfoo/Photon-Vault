@@ -24,7 +24,7 @@
 
 <p>Actions that can be applied to the selection:</p>
 
-<form method="post" action="/manage/actions/edit_date">
+<form method="post" action="/manage/actions/edit_date" class="form">
 	<label>
 		Edit date:
 		<input type="datetime" name="date" value="{{ datetime.datetime.utcnow() }}" 
@@ -35,7 +35,7 @@
 
 <br/>
 
-<form method="post" action="/manage/actions/edit_title">
+<form method="post" action="/manage/actions/edit_title" class="form">
 	<label>
 		Edit title:
 		<input type="text" name="title" 
@@ -46,7 +46,7 @@
 
 <br/>
 
-<form method="post" action="/manage/actions/add_tag">
+<form method="post" action="/manage/actions/add_tag" class="form">
 	<label>
 		Add a label:
 		<input type="text" name="tag" 
@@ -57,7 +57,7 @@
 
 <br/>
 
-<form method="post" action="/manage/actions/remove_tag">
+<form method="post" action="/manage/actions/remove_tag" class="form">
 	<label>
 		Remove a label:
 		<select name="tag">
@@ -73,7 +73,7 @@
 <br/>
 
 
-<form method="post" action="/manage/actions/set_orientation">
+<form method="post" action="/manage/actions/set_orientation" class="form">
 	<label>
 		{{ _('Set orientation: ') }}
 		<select name="orientation">

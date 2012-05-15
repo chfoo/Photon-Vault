@@ -1,0 +1,30 @@
+<div class="padVertical form-buttonBar">
+
+{% if earliest_year %}
+	<div class="widget-jumpToYear" title="Jump to year">
+	<select name="year">
+	{% for year in reversed(range(earliest_year, datetime.datetime.utcnow().year + 1)) %}
+		<option value="{{ year }}">{{ year }}</option>
+	{% end %}
+	</select>
+	<input type="submit" name="command_jump_to_year" value="{{ _('Go') }}"/>
+	</div>
+	
+	|
+{% end %}
+
+{% if paging['has_more_newer'] %}
+	<input type="hidden" name="newer_id" value="{{ items[0]['_id'] }}"/>
+	<input type="submit" name="command_newer" value="{{ _('Newer') }}"/>
+{% end %}
+
+{% if paging['has_more_older'] %}
+	<input type="hidden" name="older_id" value="{{ items[-1]['_id'] }}"/>
+	<input type="submit" name="command_older" value="{{ _('Older') }}"/>
+{% end %}
+</div>
+
+<div class="padVertical form-buttonBar">
+
+<input type="submit" name="command_continue" value="{{ _('Continue') }}"/>
+</div>

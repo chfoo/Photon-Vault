@@ -25,6 +25,7 @@ from photonvault.web.utils.render import render_response
 from tornado.web import Controller, URLSpec, HTTPError
 import PIL.Image
 import bson.objectid
+import datetime
 import httplib
 import iso8601
 import os
@@ -32,6 +33,7 @@ import photonvault.utils.exif
 import pyexiv2.metadata
 import shutil
 import tempfile
+import pymongo
 
 __docformat__ = 'restructuredtext en'
 
@@ -189,6 +191,7 @@ class ListHandler(BaseHandler, ItemPaginationMixin, SelectionMixin):
 			'num_selected': len(all_selected_ids),
 			'current_ids': list(current_ids),
 			'selected_ids': list(selected_ids),
+			'earliest_year': self.get_earliest_year(),
 		}
 	
 	def post(self):
@@ -211,6 +214,17 @@ class ListHandler(BaseHandler, ItemPaginationMixin, SelectionMixin):
 		elif self.get_argument('command_clear_selections', None):
 			self.clear_selections()
 			self.redirect(self.request.uri, status=httplib.SEE_OTHER)
+		elif self.get_argument('command_jump_to_year', None):
+			date_obj = datetime.datetime(int(self.get_argument('year')) + 1, 1, 1)
+		
+			result = self.controllers[Database].db[Item.COLLECTION].find_one(
+				{Item.DATE: {'$lte': date_obj}},
+				sort=[(Item.DATE, pymongo.DESCENDING), ('_id', pymongo.DESCENDING)]
+			)
+			
+			self.redirect(
+				'/manage/list?older_than=%s' % result['_id'], 
+				status=httplib.SEE_OTHER)
 		else:
 			self.redirect('/manage/actions', status=httplib.SEE_OTHER)
 

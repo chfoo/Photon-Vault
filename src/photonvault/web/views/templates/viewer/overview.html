@@ -1,3 +1,5 @@
+{% import datetime %}
+
 {% extends '../layout/layout.html' %}
 
 {% block layout_title %}
@@ -13,6 +15,8 @@
 {% if not items %}
 <p>(No items)</p>
 {% end %}
+
+{% include 'overview_nav.html' %}
 
 <div class="overview-thumbnails">
 {% set _prev_year = None %}
@@ -31,15 +35,6 @@
 
 </div>
 
-
-<p>
-{% if paging['has_more_newer'] %}
-	<a href="?newer_than={{ items[0]['_id'] }}">{{ _('Newer') }}</a>
-{% end %}
-
-{% if paging['has_more_older'] %}
-	<a href="?older_than={{ items[-1]['_id'] }}">{{ _('Older') }}</a>
-{% end %}
-</p>
+{% include 'overview_nav.html' %}
 
 {% end %}

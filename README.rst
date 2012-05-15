@@ -18,6 +18,7 @@ You will need:
 4. Python Image Library (PIL) (http://www.pythonware.com/products/pil/)
 5. MongoDB (http://mongodb.org/)
 6. pymongo
+7. python-iso8601
 
 Python packages can be obtained from their respective websites, http://pypi.python.org, unofficial packages/installers, and easy_install. GNU/Linux users should use their distribution package managers.
 

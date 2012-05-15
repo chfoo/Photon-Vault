@@ -32,7 +32,7 @@ a img {
 	background-color: #313131;
 }
 
-nav {
+nav, .padVertical {
 	padding-top: .5em;
 	padding-bottom: .5em;
 }
@@ -41,3 +41,4 @@ nav {
 	background-color: #676767;
 	padding: 0.25em;
 }
+

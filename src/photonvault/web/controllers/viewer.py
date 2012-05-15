@@ -44,6 +44,7 @@ class Viewer(Controller):
 			URLSpec('/detail/(.+)', DetailHandler),
 			URLSpec('/full/(.+)', FullViewHandler),
 			URLSpec('/all_tags', AllTagsHandler),
+			URLSpec('/jump_to_year', JumpToYearHandler),
 		]
 	
 	def init(self):
@@ -70,6 +71,7 @@ class OverviewHandler(BaseHandler, ItemPaginationMixin):
 				'has_more_older': results['has_more_older'],
 				'has_more_newer': results['has_more_newer'],
 			},
+			'earliest_year': self.get_earliest_year(),
 		}
 
 
@@ -169,3 +171,19 @@ class DetailHandler(BaseHandler):
 			'details': details,
 			'item': result,
 		}
+
+class JumpToYearHandler(BaseHandler):
+	def get(self):
+		date_obj = datetime.datetime(int(self.get_argument('year')) + 1, 1, 1)
+		
+		result = self.controllers[Database].db[Item.COLLECTION].find_one(
+			{Item.DATE: {'$lte': date_obj}},
+			sort=[(Item.DATE, pymongo.DESCENDING), ('_id', pymongo.DESCENDING)]
+		)
+		
+		url_path = self.get_secure_cookie('url', self.get_argument('url'))
+		
+		if result:
+			url_path += str(result['_id'])
+		
+		self.redirect(url_path, status=httplib.SEE_OTHER)
