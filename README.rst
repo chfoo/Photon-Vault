@@ -18,6 +18,7 @@ You will need:
 4. Python Image Library (PIL) (http://www.pythonware.com/products/pil/)
 5. MongoDB (http://mongodb.org/)
 6. pymongo
+7. python-iso8601
 
 Python packages can be obtained from their respective websites, http://pypi.python.org, unofficial packages/installers, and easy_install. GNU/Linux users should use their distribution package managers.
 
@@ -50,23 +51,29 @@ Then, open your web browser and go to http://localhost:8000. You can now upload,
 News
 ====
 
+The official project page is http://launchpad.net/photonvault. A courtesy GitHub project is located at https://github.com/chfoo/Photon-Vault. (Best of both worlds ☺)
+
+
 Bugs
 ++++
 
-Important issues:
-
- * Uploading tar+gz and tar+bzip may not work. This issue will be investigated.
+ * A label with "None" may be visible if there are no real tags
 
 Todo
 ++++
 
 Features that will be implemented:
 
- * Delete uploaded photos
- * Prevent uploading duplicates
+ * Detecting duplicates
 
 Changelog
 +++++++++
+
+Version 1.1
+-----------
+
+ * Support deleting photos through Manage
+ * Improved navigation
 
 Version 1.0
 -----------

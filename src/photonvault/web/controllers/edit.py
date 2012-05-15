@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
+from photonvault.web.controllers.base.handler import BaseHandler
 from photonvault.web.controllers.database import Database
 from photonvault.web.controllers.mixins.items import ItemPaginationMixin
 from photonvault.web.controllers.session import Session
 from photonvault.web.models.collection import Item, Thumbnail
 from photonvault.web.utils.render import render_response
-from tornado.web import Controller, URLSpec, RequestHandler, HTTPError
+from tornado.web import Controller, URLSpec, HTTPError
 import PIL.Image
 import bson.objectid
+import datetime
 import httplib
 import iso8601
 import os
@@ -31,6 +33,7 @@ import photonvault.utils.exif
 import pyexiv2.metadata
 import shutil
 import tempfile
+import pymongo
 
 __docformat__ = 'restructuredtext en'
 
@@ -95,7 +98,7 @@ class EXIFMixin(object):
 		self.controllers[Database].fs.delete(file_id)
 		os.remove(temp_file_obj.name)
 
-class EditSingleHandler(RequestHandler, EXIFMixin):
+class EditSingleHandler(BaseHandler, EXIFMixin):
 	@render_response
 	def get(self, str_id):
 		obj_id = bson.objectid.ObjectId(str_id)
@@ -166,7 +169,7 @@ class SelectionMixin(object):
 			session.pop(SelectionMixin.SELECTION_KEY, None)
 
 
-class ListHandler(RequestHandler, ItemPaginationMixin, SelectionMixin):
+class ListHandler(BaseHandler, ItemPaginationMixin, SelectionMixin):
 	@render_response
 	def get(self):
 		limit = 100
@@ -188,6 +191,7 @@ class ListHandler(RequestHandler, ItemPaginationMixin, SelectionMixin):
 			'num_selected': len(all_selected_ids),
 			'current_ids': list(current_ids),
 			'selected_ids': list(selected_ids),
+			'earliest_year': self.get_earliest_year(),
 		}
 	
 	def post(self):
@@ -210,11 +214,22 @@ class ListHandler(RequestHandler, ItemPaginationMixin, SelectionMixin):
 		elif self.get_argument('command_clear_selections', None):
 			self.clear_selections()
 			self.redirect(self.request.uri, status=httplib.SEE_OTHER)
+		elif self.get_argument('command_jump_to_year', None):
+			date_obj = datetime.datetime(int(self.get_argument('year')) + 1, 1, 1)
+		
+			result = self.controllers[Database].db[Item.COLLECTION].find_one(
+				{Item.DATE: {'$lte': date_obj}},
+				sort=[(Item.DATE, pymongo.DESCENDING), ('_id', pymongo.DESCENDING)]
+			)
+			
+			self.redirect(
+				'/manage/list?older_than=%s' % result['_id'], 
+				status=httplib.SEE_OTHER)
 		else:
 			self.redirect('/manage/actions', status=httplib.SEE_OTHER)
 
 
-class ActionsHandler(RequestHandler, SelectionMixin, EXIFMixin):
+class ActionsHandler(BaseHandler, SelectionMixin, EXIFMixin):
 	@render_response
 	def get(self):
 		all_selected_ids = self.get_selections()
@@ -280,14 +295,20 @@ class ActionsHandler(RequestHandler, SelectionMixin, EXIFMixin):
 				})
 				# Invalidate thumbnail
 				self.controllers[Database].db[Thumbnail.COLLECTION].remove({'_id': obj_id})
-			
+		elif action == 'delete' and self.get_argument('delete', None) == 'delete':
+			for obj_id in obj_ids:
+				item = item_collection.find_one({'_id': obj_id})
+				self.controllers[Database].fs.delete(item[Item.FILE_ID])
+				item_collection.remove({'_id': obj_id})
+		
+			self.clear_selections()
 		else:
 			raise HTTPError(httplib.BAD_REQUEST)
 		
 		self.redirect('/manage/list', status=httplib.SEE_OTHER)
 
 
-class DeleteTagHandler(RequestHandler):
+class DeleteTagHandler(BaseHandler):
 	@render_response
 	def get(self):
 		tags = self.controllers[Database].db[Item.COLLECTION].distinct(
@@ -309,7 +330,7 @@ class DeleteTagHandler(RequestHandler):
 		self.redirect('/all_tags', status=httplib.SEE_OTHER)
 	
 
-class RenameTagHandler(RequestHandler):
+class RenameTagHandler(BaseHandler):
 	@render_response
 	def get(self):
 		tags = self.controllers[Database].db[Item.COLLECTION].distinct(

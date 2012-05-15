@@ -1,0 +1,24 @@
+<div class="padVertical">
+{% if earliest_year %}
+	{% module Template('layout/widgets/jump_to_year.html',
+		url='/?older_than=',
+		start_year=earliest_year,
+		end_year=datetime.datetime.utcnow().year,
+	) %}
+	
+	|
+{% end %}
+
+{% if paging['has_more_newer'] %}
+	<a href="?newer_than={{ items[0]['_id'] }}">{{ _('Newer') }}</a>
+{% end %}
+
+{% if paging['has_more_older'] %}
+	<a href="?older_than={{ items[-1]['_id'] }}">{{ _('Older') }}</a>
+{% end %}
+
+|
+
+{{ _('%s item(s)' % locale.friendly_number(paging['count'])) }}
+
+</div>

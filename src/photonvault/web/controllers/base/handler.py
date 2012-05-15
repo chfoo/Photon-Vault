@@ -1,5 +1,5 @@
 #encoding=utf8
-'''EXIF utility functions'''
+'''Base handler'''
 #
 # This file is part of Photon Vault.
 # 
@@ -16,14 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Photon Vault.  If not, see <http://www.gnu.org/licenses/>.
 #
+from tornado.web import RequestHandler
+import httplib
+import traceback
 
 __docformat__ = 'restructuredtext en'
 
-def get_orientation_quick(pil_image):
-	if not hasattr(pil_image, '_getexif'):
-		return
-	
-	exif_dict = pil_image._getexif()
-	
-	if exif_dict:
-		return exif_dict.get(0x0112)
+
+class BaseHandler(RequestHandler):
+	def write_error(self, status_code, **kwargs):
+		self.set_status(status_code)
+		self.set_header('Content-Type', 'text/plain')
+		self.write('Error %s %s\n' % (status_code, httplib.responses.get(status_code)))
+		
+		if 'exc_info' in kwargs:
+			for line in traceback.format_exception(*kwargs['exc_info']):
+				self.write(line.encode('utf8'))
+		
+		self.finish()

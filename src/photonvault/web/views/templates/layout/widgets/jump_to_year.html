@@ -1,0 +1,11 @@
+<div class="widget-jumpToYear">
+<form method="get" action="/jump_to_year">
+<select name="year" title="Jump to year">
+{% for year in reversed(range(start_year, end_year + 1)) %}
+	<option value="{{ year }}">{{ year }}</option>
+{% end %}
+</select>
+<input type="hidden" name="url" value="{{ handler.create_signed_value('url', url) }}"/>
+<input type="submit" name="command_jump_to_year" value="{{ _('Go') }}"/>
+</form>
+</div>

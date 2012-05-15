@@ -1,12 +1,16 @@
-label {
+.form label {
 	display: block;
 }
 
-label > * {
+.form label > * {
 	display: block;
 	width: 20em;
 }
 
-input[type=submit] {
+.form-buttonBar {
 	display: block;
+}
+
+.form-blockSubmitButtons input[type=submit] {
+	display:block;
 }
