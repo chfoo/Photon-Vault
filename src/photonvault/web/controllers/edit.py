@@ -47,6 +47,7 @@ class Edit(Controller):
 			URLSpec('/manage/list', ListHandler),
 			URLSpec('/manage/delete_tag', DeleteTagHandler),
 			URLSpec('/manage/rename_tag', RenameTagHandler),
+			URLSpec('/tools', ToolsHandler),
 		]
 
 
@@ -356,3 +357,11 @@ class RenameTagHandler(BaseHandler):
 		)
 		
 		self.redirect('/all_tags', status=httplib.SEE_OTHER)
+		
+
+class ToolsHandler(BaseHandler):
+	@render_response
+	def get(self):
+		return {
+			'_template': 'edit/tools.html',
+		}

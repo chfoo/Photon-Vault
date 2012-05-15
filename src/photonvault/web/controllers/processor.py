@@ -20,13 +20,14 @@ from photonvault.web.controllers.base.handler import BaseHandler
 from photonvault.web.controllers.database import Database
 from photonvault.web.models.collection import UploadQueue, Item
 from photonvault.web.utils.render import render_response
-from tornado.web import Controller, URLSpec, FileUploadHandler
+from tornado.web import Controller, URLSpec, FileUploadHandler, asynchronous
 import PIL.Image
 import base64
 import bson.binary
 import datetime
 import gridfs
 import hashlib
+import httplib
 import logging
 import multiprocessing
 import os.path
@@ -47,7 +48,8 @@ class Processor(Controller):
 	def get_handlers(self):
 		return [
 			URLSpec('/upload', UploadHandler),
-			URLSpec('/upload_queue', QueueViewHandler)
+			URLSpec('/upload_queue', QueueViewHandler),
+			URLSpec('/local_scan', LocalScanHandler),
 		]
 	
 	def init(self):
@@ -305,3 +307,35 @@ class UploadHandler(FileUploadHandler):
 			'file_id': str(file_id),
 			'_redirect': '/queue',
 		}
+
+
+class LocalScanHandler(BaseHandler):
+	def get(self):
+		self.render('processor/local_scan.html')
+	
+	def post(self):
+		path = self.get_argument('path')
+		
+		for dirpath, dirnames, filenames in os.walk(path):
+			for name in filenames:
+				filename = os.path.join(dirpath, name)
+				
+				_logger.debug('Walking %s (%s)', filename, name)
+				
+				with open(filename, 'rb') as source_f:
+					dest_f = self.controllers[Database].fs.new_file(
+						filename=os.path.relpath(filename, path))
+				
+					shutil.copyfileobj(source_f, dest_f)
+					dest_f.close()
+				
+				file_id = dest_f._id
+				
+				upload_queue = self.controllers[Database].db[UploadQueue.COLLECTION]
+				upload_queue.insert({
+					UploadQueue.FILE_ID: file_id,
+				})
+				
+				self.controllers[Processor].queue_processor_event.set()
+	
+		self.redirect('/', status=httplib.SEE_OTHER)
