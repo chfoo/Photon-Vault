@@ -20,7 +20,7 @@ from photonvault.web.controllers.base.handler import BaseHandler
 from photonvault.web.controllers.database import Database
 from photonvault.web.models.collection import UploadQueue, Item
 from photonvault.web.utils.render import render_response
-from tornado.web import Controller, URLSpec, FileUploadHandler, asynchronous
+from tornado.web import Controller, URLSpec, FileUploadHandlerMixin
 import PIL.Image
 import base64
 import bson.binary
@@ -275,7 +275,7 @@ class QueueViewHandler(BaseHandler):
 		}
 
 
-class UploadHandler(FileUploadHandler):
+class UploadHandler(BaseHandler, FileUploadHandlerMixin):
 	def get(self):
 		self.render('processor/upload.html')
 	

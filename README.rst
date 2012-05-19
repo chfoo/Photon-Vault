@@ -13,7 +13,7 @@ Installation
 You will need:
 
 1. Python 2.7 (http://python.org)
-2. Tornado Web (forked at https://github.com/chfoo/tornado)
+2. Tornado Web (forked at https://github.com/chfoo/tornado. Use the branch features_experimental which is experimental)
 3. pyexiv2 (http://tilloy.net/dev/pyexiv2/)
 4. Python Image Library (PIL) (http://www.pythonware.com/products/pil/)
 5. MongoDB (http://mongodb.org/)
@@ -58,10 +58,12 @@ Bugs
 ++++
 
  * A label with "None" may be visible if there are no real tags
+ * My fork of Tornado does not work well with uploads.
 
 Todo
 ++++
 
+ * A viewer mode which displays files from a server's local directory. This mode does not use a database and items will be populated from the directory. Tags and titles will be auto-generated and removed when the directory is scanned.
 
 Changelog
 +++++++++
